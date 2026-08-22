@@ -1,6 +1,6 @@
-# ehl-cognition-2026
+# Catalyst
 
-## CPU-native bioinformatics pipeline
+Catalyst combines a CPU-native bioinformatics pipeline with a local dashboard for demonstrating a Devin-style computational bioengineering workflow.
 
 This repository contains CPU-native scientific vertical slices. A target
 protein FASTA is searched against a FASTA database with MMseqs2, aligned with
@@ -8,26 +8,59 @@ MAFFT, and analyzed for per-column conservation in pure Python/NumPy. The
 structure slice maps a deposited PDB chain to the target and MSA, computes
 DSSP annotations, and searches a committed reference set with Foldseek.
 
-Install the project into the supplied environment with
-`./.venv/bin/python -m pip install -e .`. The pipeline writes validated JSON
-artifacts (`homolog_search.json`, `alignment.json`, `conservation.json`, and
-`run.json`) next to the intermediate FASTA files. Each artifact has a
-committed JSON Schema under `schemas/` and includes tool/file provenance.
-MMseqs2 percent identity is reported on a 0-100 scale. The MMseqs2 and MAFFT
-parameters used for each run are recorded in its provenance.
-Each stage records digests of its inputs, while the run manifest records
-digests of every artifact file produced, since an artifact cannot contain its
-own hash.
+## Local orchestration dashboard
 
-Evidence is labeled `KNOWN` for the pinned UniProt fixture/database
-sequences, `CALCULATED` for direct MMseqs2/MAFFT/conservation output, and
-`PREDICTED` or `EXPERIMENTAL` are reserved for future work. The run manifest
-states the computational limitations explicitly; no result in this slice is
-experimentally validated.
+The dashboard can:
 
-The single smoke-test command is:
+- submit a protein-engineering objective,
+- watch Sequence and Structure workers run in parallel,
+- inspect normalized activity and downloadable scientific artifacts,
+- review an evidence-labeled mutation shortlist,
+- apply a follow-up constraint without rerunning unaffected tools.
 
-```sh
+The local executor runs real MAFFT, DSSP, and Bio.PDB calculations against a curated IsPETase dataset. Its ranking is a transparent demonstration and **not an experimental claim of 60 °C performance**.
+
+### Start locally
+
+The repository snapshot already contains Python 3.12, the `.venv`, and the CPU bioinformatics tools.
+
+```bash
+.venv/bin/pip install -e '.[dev]'
+npm --prefix frontend install
+./scripts/start-local.sh
+```
+
+Open http://localhost:3000. The FastAPI API and interactive docs run at http://localhost:8000 and http://localhost:8000/docs.
+
+To use a different API origin:
+
+```bash
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 npm --prefix frontend run dev
+```
+
+### Demonstration flow
+
+1. Launch the prefilled PETase objective.
+2. Watch the coordinator start Sequence and Structure workers.
+3. Observe a real missing-structure-input failure and successful DSSP retry.
+4. Download the alignment, conservation, structure, DSSP, and distance artifacts.
+5. Review the candidate table and evidence categories.
+6. Submit `Exclude mutations within 10 Å of the catalytic site.`
+7. See a new result version without rerunning MAFFT or DSSP.
+
+Local state is written under `backend/.local/` and is excluded from Git.
+
+## CPU-native pipeline
+
+The `bioctl` pipeline searches a FASTA database with MMseqs2, aligns hits with MAFFT, and analyzes per-column conservation in Python/NumPy.
+
+It writes validated `homolog_search.json`, `alignment.json`, `conservation.json`, and `run.json` artifacts next to the intermediate FASTA files. Each artifact has a committed JSON Schema under `schemas/` and includes tool/file provenance. MMseqs2 percent identity is reported on a 0-100 scale, and every run records tool parameters and artifact digests.
+
+Evidence is labeled `KNOWN` for pinned UniProt fixture/database sequences and `CALCULATED` for direct MMseqs2/MAFFT/conservation output. `PREDICTED` and `EXPERIMENTAL` are reserved for future evidence; nothing in this repository is experimentally validated.
+
+Run its smoke test with:
+
+```bash
 ./scripts/smoke_test.sh
 ```
 
@@ -124,3 +157,22 @@ path and digest are pinned in the final report. The fourth smoke test is:
 ```sh
 ./scripts/investigate_smoke_test.sh
 ```
+
+## Development
+
+```bash
+# Python
+.venv/bin/ruff check backend bio_tools tests
+.venv/bin/ruff format --check backend bio_tools tests
+.venv/bin/pytest
+
+# Frontend
+npm --prefix frontend run lint
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+```
+
+## Devin integration boundary
+
+The dashboard currently defaults to a deterministic local executor so it runs without external credentials. The run, agent, event, artifact, candidate, and follow-up contracts match the proposed managed-Devin control plane; connecting real managed sessions requires a supported `cog_` service-user key because legacy `apk_` keys cannot access v3 or Devin MCP.
+
