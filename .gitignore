@@ -16,5 +16,6 @@ frontend/.next/
 frontend/node_modules/
 frontend/out/
 *.tsbuildinfo
+frontend/next-env.d.ts
 frontend/.env.local
 .env.devin
