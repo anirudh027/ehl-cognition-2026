@@ -26,6 +26,14 @@ def test_health_reports_executor(client: TestClient) -> None:
     assert body["executor"] == "mock"
 
 
+def test_version_reports_version_and_executor(client: TestClient) -> None:
+    response = client.get("/api/version")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["version"] == "0.1.0"
+    assert body["executor"] == "mock"
+
+
 def test_create_ticket_and_poll_until_done(client: TestClient) -> None:
     response = client.post(
         "/api/tickets",
