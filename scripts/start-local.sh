@@ -23,6 +23,7 @@ fi
   --app-dir "$ROOT" \
   --host 127.0.0.1 \
   --port 8000 \
+  --loop asyncio \
   --reload &
 API_PID=$!
 
