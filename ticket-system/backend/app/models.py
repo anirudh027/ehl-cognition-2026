@@ -45,6 +45,7 @@ class Subtask(BaseModel):
     status: str
     iterations: int = 0
     session_id: str | None = None
+    critic_session_id: str | None = None
     session_url: str | None = None
     pr_url: str | None = None
     verdict: str | None = None

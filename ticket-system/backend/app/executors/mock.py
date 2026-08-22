@@ -23,6 +23,7 @@ from .base import AgentResult, Executor, ExecutorError
 _TITLE = re.compile(r"^Title:\s*(.+)$", re.MULTILINE)
 _REPO = re.compile(r"^Repository:\s*(.+)$", re.MULTILINE)
 _SUBTASK = re.compile(r"^Subtask:\s*(.+)$", re.MULTILINE)
+_TICKET_TITLE = re.compile(r"^Ticket:\s*\S+\s+—\s*(.+)$", re.MULTILINE)
 
 
 def _field(pattern: re.Pattern[str], prompt: str, fallback: str) -> str:
@@ -106,7 +107,9 @@ class MockExecutor(Executor):
         )
 
     def _build(self, state: _SessionState, message: str) -> BaseModel:
-        title = _field(_TITLE, state.prompt, "the requested change")
+        title = _field(_TITLE, state.prompt, "") or _field(
+            _TICKET_TITLE, state.prompt, "the requested change"
+        )
         repo = _field(_REPO, state.prompt, "owner/repo")
         subtask = _field(_SUBTASK, state.prompt, title)
         slug = re.sub(r"[^a-z0-9]+", "-", subtask.lower()).strip("-")[:40] or "change"
@@ -191,8 +194,14 @@ class MockExecutor(Executor):
                 unmet_criteria=[],
             )
 
+        escalated = "escalated" in state.prompt
         return RetroOutput(
-            summary=f"'{title}' converged after one review round per subtask.",
+            summary=(
+                f"'{title}' stalled: at least one subtask escalated to a human because "
+                "the reviewer's comments were not fully addressed."
+                if escalated
+                else f"'{title}' converged after one revision round per subtask."
+            ),
             recurring_issues=[
                 "Implementers ship happy-path tests only until the critic asks for failure cases",
                 "Documentation updates are skipped unless named in the acceptance criteria",

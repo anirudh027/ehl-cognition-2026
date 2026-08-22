@@ -37,15 +37,16 @@ def pipeline(tmp_path: Path):
     db.close()
 
 
-def _ticket(db: Database) -> str:
+def _ticket(db: Database, max_iterations: int = 3) -> str:
     return db.create_ticket(
         TicketCreate(
             title="Add CSV export to the reports page",
             description="Users need to download report rows as CSV.",
             repo="acme/reports",
             acceptance_criteria=["A download button exports the current filter set"],
+            max_iterations=max_iterations,
         ),
-        max_iterations=3,
+        max_iterations=max_iterations,
     )
 
 
@@ -119,6 +120,34 @@ async def test_human_feedback_resumes_implementer_session(pipeline) -> None:
 
     phases = [event.phase for event in db.list_events(ticket_id)]
     assert "human_feedback" in phases
+
+
+async def test_human_feedback_resolves_an_escalated_subtask(pipeline) -> None:
+    db, orchestrator = pipeline
+    # One review round only, so the reviewer's first rejection escalates immediately.
+    ticket_id = _ticket(db, max_iterations=1)
+    orchestrator.submit(ticket_id)
+    await orchestrator.wait(ticket_id)
+
+    ticket = db.get_ticket(ticket_id)
+    assert ticket is not None
+    assert ticket.status is TicketStatus.needs_human
+    blocked = [item for item in ticket.subtasks if item.status == "needs_human"]
+    assert blocked, "expected at least one escalated subtask"
+
+    for subtask in blocked:
+        await orchestrator.apply_human_feedback(
+            ticket_id, subtask.id, "Add the failure-mode test the reviewer asked for."
+        )
+
+    resolved = db.get_ticket(ticket_id)
+    assert resolved is not None
+    # The re-review resumes the existing critic session instead of starting a new
+    # one, so the feedback can actually converge.
+    assert [item.status for item in resolved.subtasks] == ["approved"] * len(resolved.subtasks)
+    assert resolved.status is TicketStatus.done
+    assert resolved.metrics["subtasks_blocked"] == 0
+    assert resolved.metrics["review_rounds"] == sum(item.iterations for item in resolved.subtasks)
 
 
 def test_parse_output_accepts_fenced_json() -> None:

@@ -244,6 +244,7 @@ class Orchestrator:
             critique, critic_session = await self._review(
                 ticket, subtask, implementation, critic_session
             )
+            self.db.update_subtask(subtask.id, critic_session_id=critic_session)
 
             if critique.verdict == "pass":
                 self.db.update_subtask(subtask.id, status="approved", verdict="pass")
@@ -408,7 +409,9 @@ class Orchestrator:
             "Human feedback sent back into the implementer session",
             data={"subtask_id": subtask_id, "feedback": feedback},
         )
-        self.db.update_subtask(subtask_id, status="revising")
+        self.db.update_subtask(
+            subtask_id, status="revising", iterations=subtask.iterations + 1
+        )
         self._set_status(ticket_id, TicketStatus.revising)
         revision = await self.executor.follow_up(
             role=AgentRole.implementer,
@@ -427,7 +430,10 @@ class Orchestrator:
             data={"subtask_id": subtask_id, "pr_url": pr_url},
         )
 
-        critique, _ = await self._review(ticket, subtask, implementation, None)
+        critique, critic_session = await self._review(
+            ticket, subtask, implementation, subtask.critic_session_id
+        )
+        self.db.update_subtask(subtask_id, critic_session_id=critic_session)
         if critique.verdict == "pass":
             self.db.update_subtask(subtask_id, status="approved", verdict="pass")
             self._emit(
@@ -452,11 +458,16 @@ class Orchestrator:
                 },
             )
 
-        remaining = [
-            item
-            for item in self._require_ticket(ticket_id).subtasks
-            if item.status not in {"approved"}
-        ]
+        subtasks = self._require_ticket(ticket_id).subtasks
+        remaining = [item for item in subtasks if item.status != "approved"]
+        self.db.merge_metrics(
+            ticket_id,
+            {
+                "subtasks_passed": len(subtasks) - len(remaining),
+                "subtasks_blocked": len(remaining),
+                "review_rounds": sum(item.iterations for item in subtasks),
+            },
+        )
         self._set_status(
             ticket_id, TicketStatus.needs_human if remaining else TicketStatus.done
         )

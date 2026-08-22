@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS subtasks (
     status TEXT NOT NULL,
     iterations INTEGER NOT NULL DEFAULT 0,
     session_id TEXT,
+    critic_session_id TEXT,
     session_url TEXT,
     pr_url TEXT,
     verdict TEXT
@@ -236,6 +237,7 @@ class Database:
             "status",
             "iterations",
             "session_id",
+            "critic_session_id",
             "session_url",
             "pr_url",
             "verdict",
@@ -264,6 +266,7 @@ class Database:
                 status=row["status"],
                 iterations=row["iterations"],
                 session_id=row["session_id"],
+                critic_session_id=row["critic_session_id"],
                 session_url=row["session_url"],
                 pr_url=row["pr_url"],
                 verdict=row["verdict"],
