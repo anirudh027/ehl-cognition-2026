@@ -21,10 +21,16 @@ from .settings import Settings, load_settings
 logger = logging.getLogger(__name__)
 
 SSE_KEEPALIVE_SECONDS = 15.0
+APP_VERSION = "0.1.0"
 
 
 class FeedbackRequest(BaseModel):
     feedback: str = Field(min_length=3, max_length=10_000)
+
+
+class VersionResponse(BaseModel):
+    version: str
+    executor: str
 
 
 class HealthResponse(BaseModel):
@@ -57,7 +63,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    app = FastAPI(title="Ticket System", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Ticket System", version=APP_VERSION, lifespan=lifespan)
     resolved = settings or load_settings()
     app.state.settings = resolved
     app.add_middleware(
@@ -99,6 +105,11 @@ def _register_routes(app: FastAPI) -> None:
             devin_configured=settings.devin_available,
             max_iterations=settings.max_iterations,
         )
+
+    @app.get("/api/version", response_model=VersionResponse)
+    def version(request: Request) -> VersionResponse:
+        settings: Settings = request.app.state.settings
+        return VersionResponse(version=APP_VERSION, executor=settings.executor)
 
     @app.post("/api/tickets", response_model=Ticket, status_code=201)
     async def create_ticket(
