@@ -1,26 +1,42 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bio-tools"
+name = "catalyst-bioengineering"
 version = "0.1.0"
-description = "CPU-native homolog search, alignment, and conservation pipeline"
+description = "CPU-native bioinformatics pipeline and local orchestration dashboard"
 requires-python = ">=3.12"
 dependencies = [
-  "biopython",
-  "numpy",
-  "pandas",
-  "scipy",
-  "pydantic>=2",
-  "jsonschema",
+  "biopython==1.88",
+  "fastapi==0.116.1",
+  "httpx==0.28.1",
+  "jsonschema==4.26.0",
+  "numpy==2.5.2",
+  "pandas==3.0.5",
+  "pydantic==2.13.4",
+  "scipy==1.18.1",
+  "uvicorn[standard]==0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "ruff==0.12.7",
 ]
 
 [project.scripts]
 bioctl = "bio_tools.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["bio_tools*"]
+include = ["backend*", "bio_tools*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["backend/tests", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
