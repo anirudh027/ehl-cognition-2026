@@ -74,6 +74,7 @@ Open http://localhost:5173, submit a ticket, and watch the timeline.
 | `TICKETS_SESSION_TIMEOUT` | `5400` | seconds before a stuck session fails |
 | `TICKETS_MOCK_SPEED` | `1` | mock executor speed multiplier |
 | `DEVIN_API_BASE` | `https://api.devin.ai` | API base URL |
+| `TICKETS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | comma-separated CORS origins |
 
 ## API
 

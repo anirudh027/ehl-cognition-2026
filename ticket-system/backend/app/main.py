@@ -58,13 +58,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Ticket System", version="0.1.0", lifespan=lifespan)
-    app.state.settings = settings or load_settings()
+    resolved = settings or load_settings()
+    app.state.settings = resolved
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=list(resolved.allowed_origins),
         allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
     )
     _register_routes(app)
     return app
@@ -151,9 +152,7 @@ def _register_routes(app: FastAPI) -> None:
             raise HTTPException(
                 status_code=409, detail="subtask has no implementer session to resume yet"
             )
-        asyncio.create_task(
-            orchestrator.apply_human_feedback(ticket_id, subtask_id, payload.feedback)
-        )
+        orchestrator.submit_feedback(ticket_id, subtask_id, payload.feedback)
         return {"status": "accepted"}
 
     @app.get("/api/learnings", response_model=list[Learning])

@@ -12,6 +12,7 @@ from ..settings import Settings
 from .base import AgentResult, Executor, ExecutorError, json_schema_for, parse_output
 
 FINISHED_STATUSES = {"finished", "blocked", "expired", "exit", "suspended"}
+AGENT_MESSAGE_TYPES = {"devin_message", "devin_message_sent"}
 
 
 class DevinExecutor(Executor):
@@ -131,25 +132,37 @@ class DevinExecutor(Executor):
         schema: type[BaseModel],
         message_marker: int,
     ) -> BaseModel | None:
-        structured = session.get("structured_output")
-        if isinstance(structured, dict) and structured:
-            try:
-                return parse_output(schema, structured)
-            except ExecutorError:
-                return None
         messages = session.get("messages")
-        if not isinstance(messages, list):
-            return None
-        for entry in reversed(messages[message_marker:]):
+        fresh: list[object] = (
+            cast(list[object], messages)[message_marker:] if isinstance(messages, list) else []
+        )
+        # On a follow-up turn the session still carries the previous turn's
+        # structured output, which validates against the same schema, so it is
+        # only trusted once the resumed session has spoken again.
+        if message_marker == 0 or self._has_agent_message(fresh):
+            structured = session.get("structured_output")
+            if isinstance(structured, dict) and structured:
+                try:
+                    return parse_output(schema, structured)
+                except ExecutorError:
+                    return None
+        for entry in reversed(fresh):
             if not isinstance(entry, dict):
                 continue
-            if entry.get("type") not in {"devin_message", "devin_message_sent"}:
+            if entry.get("type") not in AGENT_MESSAGE_TYPES:
                 continue
             try:
                 return parse_output(schema, str(entry.get("message", "")))
             except ExecutorError:
                 continue
         return None
+
+    @staticmethod
+    def _has_agent_message(entries: list[object]) -> bool:
+        return any(
+            isinstance(entry, dict) and entry.get("type") in AGENT_MESSAGE_TYPES
+            for entry in entries
+        )
 
     async def _get_session(self, session_id: str) -> dict[str, object]:
         response = await self._client.get(f"/v1/sessions/{session_id}")

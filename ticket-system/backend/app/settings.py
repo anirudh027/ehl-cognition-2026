@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "tickets.db"
+DEFAULT_ALLOWED_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class Settings:
     poll_interval_seconds: float
     session_timeout_seconds: float
     mock_speed: float
+    allowed_origins: tuple[str, ...]
 
     @property
     def devin_available(self) -> bool:
@@ -40,4 +42,11 @@ def load_settings() -> Settings:
         poll_interval_seconds=float(os.environ.get("TICKETS_POLL_INTERVAL", "10")),
         session_timeout_seconds=float(os.environ.get("TICKETS_SESSION_TIMEOUT", "5400")),
         mock_speed=float(os.environ.get("TICKETS_MOCK_SPEED", "1")),
+        allowed_origins=_origins(os.environ.get("TICKETS_ALLOWED_ORIGINS")),
     )
+
+
+def _origins(raw: str | None) -> tuple[str, ...]:
+    if not raw:
+        return DEFAULT_ALLOWED_ORIGINS
+    return tuple(part.strip() for part in raw.split(",") if part.strip())

@@ -53,6 +53,25 @@ class Orchestrator:
         task = asyncio.create_task(self._guarded_run(ticket_id), name=f"ticket-{ticket_id}")
         self._tasks[ticket_id] = task
 
+    def submit_feedback(self, ticket_id: str, subtask_id: str, feedback: str) -> None:
+        key = f"{ticket_id}:feedback:{subtask_id}"
+        existing = self._tasks.get(key)
+        if existing is not None and not existing.done():
+            return
+        self._tasks[key] = asyncio.create_task(
+            self._guarded_feedback(ticket_id, subtask_id, feedback), name=f"feedback-{subtask_id}"
+        )
+
+    async def _guarded_feedback(self, ticket_id: str, subtask_id: str, feedback: str) -> None:
+        try:
+            await self.apply_human_feedback(ticket_id, subtask_id, feedback)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - surfaced to the UI as a failure event
+            logger.exception("feedback for subtask %s failed", subtask_id)
+            self._emit(ticket_id, "error", f"Human feedback failed: {exc}", level="error")
+            self._set_status(ticket_id, TicketStatus.needs_human)
+
     async def wait(self, ticket_id: str) -> None:
         task = self._tasks.get(ticket_id)
         if task is not None:
