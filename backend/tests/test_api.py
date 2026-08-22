@@ -65,6 +65,12 @@ def test_local_run_and_follow_up(tmp_path: Path, monkeypatch: MonkeyPatch) -> No
         assert download.status_code == 200
         assert download.content
 
+        assert all(agent["traces"] == [] for agent in updated["agents"])
+        traces = client.post(f"/api/runs/{run_id}/traces/refresh")
+        assert traces.status_code == 409
+        missing = client.post("/api/runs/does-not-exist/traces/refresh")
+        assert missing.status_code == 404
+
 
 def test_managed_mode_requires_supported_credentials(
     tmp_path: Path,

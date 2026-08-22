@@ -1,3 +1,10 @@
+export type AgentTrace = {
+  id: string;
+  source: string;
+  body: string;
+  created_at: string;
+};
+
 export type Agent = {
   id: string;
   parent_id: string | null;
@@ -8,6 +15,7 @@ export type Agent = {
   external_id: string | null;
   url: string | null;
   acus_consumed: number;
+  traces: AgentTrace[];
 };
 
 export type RunEvent = {

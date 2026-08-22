@@ -7,9 +7,10 @@ import {
   artifactUrl,
   createRun,
   getRun,
+  refreshTraces,
   sendFollowUp,
 } from "@/lib/api";
-import type { Agent, Candidate, Run, RunEvent } from "@/lib/types";
+import type { Agent, AgentTrace, Candidate, Run, RunEvent } from "@/lib/types";
 
 const DEFAULT_OBJECTIVE =
   "Develop a PET-degrading enzyme that remains useful around 60 °C while preserving catalytic function.";
@@ -37,7 +38,30 @@ function statusLabel(value: string): string {
   return "Queued";
 }
 
+function traceSourceLabel(source: string): string {
+  if (source === "user") return "Instruction";
+  if (source === "devin") return "Devin";
+  return label(source);
+}
+
+function AgentTraceList({ traces }: { traces: AgentTrace[] }) {
+  return (
+    <details className="trace-block">
+      <summary>Thought trace · {traces.length}</summary>
+      <ol className="trace-list">
+        {traces.map((trace) => (
+          <li key={trace.id} className={`trace-item trace-${trace.source}`}>
+            <span className="trace-source">{traceSourceLabel(trace.source)}</span>
+            <p>{trace.body}</p>
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
 function AgentCard({ agent, child }: { agent: Agent; child?: boolean }) {
+  const traces = agent.traces ?? [];
   return (
     <div className={`agent-card ${child ? "agent-child" : ""}`}>
       <div className="agent-identity">
@@ -59,6 +83,7 @@ function AgentCard({ agent, child }: { agent: Agent; child?: boolean }) {
           <span>{agent.acus_consumed.toFixed(2)} ACUs</span>
         </div>
       ) : null}
+      {traces.length > 0 ? <AgentTraceList traces={traces} /> : null}
     </div>
   );
 }
@@ -128,6 +153,7 @@ export default function Home() {
   const [followUp, setFollowUp] = useState(FOLLOW_UP_EXAMPLE);
   const [isStarting, setIsStarting] = useState(false);
   const [isSteering, setIsSteering] = useState(false);
+  const [isLoadingTraces, setIsLoadingTraces] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async (runId: string) => {
@@ -194,6 +220,21 @@ export default function Home() {
       setError(startError instanceof Error ? startError.message : "Unable to start run");
     } finally {
       setIsStarting(false);
+    }
+  }
+
+  async function handleLoadTraces() {
+    if (!run) return;
+    setIsLoadingTraces(true);
+    setError(null);
+    try {
+      setRun(await refreshTraces(run.id));
+    } catch (traceError) {
+      setError(
+        traceError instanceof Error ? traceError.message : "Unable to load session traces",
+      );
+    } finally {
+      setIsLoadingTraces(false);
     }
   }
 
@@ -332,6 +373,16 @@ export default function Home() {
                 </div>
                 <span>{run.agents.length}</span>
               </div>
+              {run.mode === "devin" ? (
+                <button
+                  type="button"
+                  className="trace-refresh"
+                  onClick={() => void handleLoadTraces()}
+                  disabled={isLoadingTraces}
+                >
+                  {isLoadingTraces ? "Loading traces…" : "Sync session traces"}
+                </button>
+              ) : null}
               {coordinator && <AgentCard agent={coordinator} />}
               <div className="agent-branch">
                 {children.map((agent) => (

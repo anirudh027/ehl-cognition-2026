@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import cast
 
 import httpx
 
@@ -90,6 +91,121 @@ def test_devin_client_uses_prefixed_session_routes() -> None:
         "/v3/organizations/org-test/sessions/devin-abc123/messages",
     )
     assert "10 angstrom" in requests[1][2]
+
+
+def test_devin_client_lists_session_messages() -> None:
+    requests: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append((request.method, request.url.path))
+        return httpx.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "event_id": "event-1",
+                        "source": "user",
+                        "message": "Analyze conservation.",
+                        "created_at": "2026-01-01T00:00:00Z",
+                    },
+                    "not-a-message",
+                ],
+                "has_next_page": False,
+                "total": 1,
+            },
+        )
+
+    config = DevinConfig(
+        api_key="cog_test",
+        org_id="org-test",
+        repo="owner/repo",
+        repo_ref="main",
+        devin_mode="normal",
+        max_acu_limit=2,
+        poll_interval=0,
+        run_timeout=30,
+    )
+    client = DevinClient(config, transport=httpx.MockTransport(handler))
+
+    messages = asyncio.run(client.list_messages("abc123"))
+
+    assert requests == [
+        ("GET", "/v3/organizations/org-test/sessions/devin-abc123/messages"),
+    ]
+    assert len(messages) == 1
+    assert messages[0]["event_id"] == "event-1"
+
+
+def test_managed_runner_mirrors_session_traces(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/messages"):
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "event_id": "event-1",
+                            "source": "user",
+                            "message": "Assess the candidate sites.",
+                            "created_at": "2026-01-01T00:00:00Z",
+                        },
+                        {
+                            "event_id": "event-2",
+                            "source": "devin",
+                            "message": "Ran MAFFT and measured conservation.",
+                            "created_at": "2026-01-01T00:01:00Z",
+                        },
+                        {
+                            "event_id": "event-3",
+                            "source": "devin",
+                            "message": "   ",
+                            "created_at": "2026-01-01T00:02:00Z",
+                        },
+                    ]
+                },
+            )
+        raise AssertionError("unexpected request")
+
+    store = Store(tmp_path / "dashboard.sqlite3")
+    run, agents = store.create_run(
+        "Develop a PETase candidate that remains useful around 60 C.",
+        "devin",
+    )
+    run_id = str(run["id"])
+    sequence_id = agents["sequence"]
+    store.update_agent(
+        sequence_id,
+        status="running",
+        summary="Managed sequence analysis is running",
+        external_id="sequence",
+        url="https://app.devin.ai/sessions/sequence",
+    )
+    config = DevinConfig(
+        api_key="cog_test",
+        org_id="org-test",
+        repo="owner/repo",
+        repo_ref="main",
+        devin_mode="normal",
+        max_acu_limit=2,
+        poll_interval=0,
+        run_timeout=30,
+    )
+    runner = ManagedWorkflowRunner(
+        store,
+        DevinClient(config, transport=httpx.MockTransport(handler)),
+        tmp_path / "runs",
+    )
+
+    asyncio.run(runner.refresh_traces(run_id))
+    refreshed = asyncio.run(runner.refresh_traces(run_id))
+
+    agent_rows = cast(list[dict[str, object]], refreshed["agents"])
+    sequence = next(agent for agent in agent_rows if agent["id"] == sequence_id)
+    traces = cast(list[dict[str, object]], sequence["traces"])
+    assert [trace["source"] for trace in traces] == ["user", "devin"]
+    assert traces[1]["body"] == "Ran MAFFT and measured conservation."
+    coordinator = next(agent for agent in agent_rows if agent["role"] == "coordinator")
+    assert coordinator["traces"] == []
 
 
 def test_managed_runner_persists_mocked_sessions(tmp_path: Path) -> None:

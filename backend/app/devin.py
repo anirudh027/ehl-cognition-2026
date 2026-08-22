@@ -79,6 +79,19 @@ class DevinClient:
             f"/v3/organizations/{self.config.org_id}/sessions/{self._devin_id(session_id)}",
         )
 
+    async def list_messages(self, session_id: str) -> list[dict[str, object]]:
+        payload = await self._request(
+            "GET",
+            (
+                f"/v3/organizations/{self.config.org_id}/sessions/"
+                f"{self._devin_id(session_id)}/messages"
+            ),
+        )
+        items = payload.get("items")
+        if not isinstance(items, list):
+            return []
+        return [item for item in items if isinstance(item, dict)]
+
     async def send_message(self, session_id: str, message: str) -> dict[str, object]:
         return await self._request(
             "POST",

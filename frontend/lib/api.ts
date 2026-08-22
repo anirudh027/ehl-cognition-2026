@@ -38,6 +38,10 @@ export function sendFollowUp(runId: string, message: string): Promise<Run> {
   });
 }
 
+export function refreshTraces(runId: string): Promise<Run> {
+  return request<Run>(`/api/runs/${runId}/traces/refresh`, { method: "POST" });
+}
+
 export function artifactUrl(artifactId: string): string {
   return `${API_URL}/api/artifacts/${artifactId}`;
 }

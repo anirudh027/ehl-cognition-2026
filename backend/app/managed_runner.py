@@ -328,6 +328,14 @@ class ManagedWorkflowRunner:
         )
         return self.store.get_run(run_id)
 
+    async def refresh_traces(self, run_id: str) -> dict[str, object]:
+        run = self.store.get_run(run_id)
+        for agent in cast(list[dict[str, object]], run["agents"]):
+            external_id = str(agent.get("external_id") or "")
+            if external_id:
+                await self._sync_traces(run_id, str(agent["id"]), external_id)
+        return self.store.get_run(run_id)
+
     async def _run_specialist(
         self,
         run_id: str,
@@ -397,6 +405,7 @@ class ManagedWorkflowRunner:
                 summary=f"{title}: {detail or status}",
                 acus_consumed=acus,
             )
+            await self._sync_traces(run_id, agent_id, session_id)
             if status == "error":
                 raise RuntimeError(f"{title} stopped with status {status}: {detail or 'unknown'}")
             if detail == "waiting_for_approval":
@@ -424,6 +433,31 @@ class ManagedWorkflowRunner:
                 return session
             await asyncio.sleep(self.client.config.poll_interval)
         raise TimeoutError(f"{title} exceeded the managed run timeout.")
+
+    async def _sync_traces(self, run_id: str, agent_id: str, session_id: str) -> None:
+        """Mirror the managed session transcript so the dashboard needs no Devin login."""
+        try:
+            messages = await self.client.list_messages(session_id)
+        except Exception:
+            return
+        known = self.store.known_trace_ids(agent_id)
+        entries: list[dict[str, str]] = []
+        for index, message in enumerate(messages):
+            body = str(message.get("message") or "").strip()
+            if not body:
+                continue
+            external_event_id = str(message.get("event_id") or f"{session_id}-{index}")
+            if external_event_id in known:
+                continue
+            entries.append(
+                {
+                    "external_event_id": external_event_id,
+                    "source": str(message.get("source") or "devin"),
+                    "body": body,
+                    "created_at": str(message.get("created_at") or ""),
+                }
+            )
+        self.store.add_traces(run_id, agent_id, entries)
 
     def _bind_agent(
         self,

@@ -90,6 +90,16 @@ class Store:
             body TEXT NOT NULL,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS traces (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+            agent_id TEXT NOT NULL,
+            external_event_id TEXT NOT NULL,
+            source TEXT NOT NULL,
+            body TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE (agent_id, external_event_id)
+        );
         """
         with self._lock, self._connect() as connection:
             connection.executescript(schema)
@@ -318,6 +328,44 @@ class Store:
                 rows,
             )
 
+    def add_traces(
+        self,
+        run_id: str,
+        agent_id: str,
+        entries: list[dict[str, str]],
+    ) -> None:
+        if not entries:
+            return
+        rows = [
+            (
+                uuid4().hex[:12],
+                run_id,
+                agent_id,
+                entry["external_event_id"],
+                entry["source"],
+                entry["body"],
+                entry["created_at"],
+            )
+            for entry in entries
+        ]
+        with self._lock, self._connect() as connection:
+            connection.executemany(
+                """
+                INSERT OR IGNORE INTO traces
+                (id, run_id, agent_id, external_event_id, source, body, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                rows,
+            )
+
+    def known_trace_ids(self, agent_id: str) -> set[str]:
+        with self._lock, self._connect() as connection:
+            rows = connection.execute(
+                "SELECT external_event_id FROM traces WHERE agent_id = ?",
+                (agent_id,),
+            ).fetchall()
+        return {str(row["external_event_id"]) for row in rows}
+
     def add_message(self, run_id: str, body: str) -> None:
         with self._lock, self._connect() as connection:
             connection.execute(
@@ -359,14 +407,27 @@ class Store:
                 "SELECT id, body, created_at FROM messages WHERE run_id = ? ORDER BY created_at",
                 (run_id,),
             ).fetchall()
+            traces = connection.execute(
+                """
+                SELECT id, agent_id, source, body, created_at
+                FROM traces WHERE run_id = ? ORDER BY created_at, rowid
+                """,
+                (run_id,),
+            ).fetchall()
         candidate_rows: list[dict[str, object]] = []
         for candidate in candidates:
             row = dict(candidate)
             row["evidence"] = json.loads(str(row["evidence"]))
             row["excluded"] = bool(row["excluded"])
             candidate_rows.append(row)
+        traces_by_agent: dict[str, list[dict[str, object]]] = {}
+        for trace in traces:
+            row = dict(trace)
+            traces_by_agent.setdefault(str(row.pop("agent_id")), []).append(row)
         result = dict(run)
-        result["agents"] = [dict(agent) for agent in agents]
+        result["agents"] = [
+            {**dict(agent), "traces": traces_by_agent.get(str(agent["id"]), [])} for agent in agents
+        ]
         result["events"] = [dict(event) for event in events]
         result["artifacts"] = [dict(artifact) for artifact in artifacts]
         result["candidates"] = candidate_rows

@@ -59,7 +59,9 @@ Local mode remains the default and consumes no ACUs. Managed mode launches two s
 3. Copy `.env.devin.example` to `.env.devin`, enter the server-side key and organization ID, and choose the per-session ACU cap.
 4. Start the app and select **Managed Devin · uses credits** before launching a run.
 
-The browser receives only execution mode, session links, statuses, and ACU totals. It never receives the API key. One managed run creates three sessions, so a 2-ACU per-session cap permits a theoretical maximum of 6 ACUs. The app never launches managed sessions unless that mode is explicitly selected.
+Managed session transcripts are mirrored server-side into each agent card as a collapsible **Thought trace**, so reviewers read the reasoning inside the dashboard without signing in to app.devin.ai. Use **Sync session traces** in the Agent hierarchy panel to pull the newest messages for a finished run.
+
+The browser receives only execution mode, session links, statuses, ACU totals, and mirrored session messages. It never receives the API key. One managed run creates three sessions, so a 2-ACU per-session cap permits a theoretical maximum of 6 ACUs. The app never launches managed sessions unless that mode is explicitly selected.
 
 ## CPU-native pipeline
 

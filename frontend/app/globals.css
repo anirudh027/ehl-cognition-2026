@@ -544,6 +544,68 @@ footer {
   color: var(--muted);
 }
 
+.trace-refresh {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f4f7f5;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.trace-refresh:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.trace-block {
+  margin: 10px 0 0 20px;
+}
+
+.trace-block summary {
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.trace-list {
+  max-height: 260px;
+  margin: 8px 0 0;
+  padding: 0 4px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.trace-item {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.trace-source {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trace-item p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .guardrail {
   margin-top: 22px;
   padding: 15px;

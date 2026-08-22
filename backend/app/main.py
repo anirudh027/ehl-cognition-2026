@@ -125,6 +125,22 @@ def create_app(
         except RuntimeError as error:
             raise HTTPException(status_code=502, detail=str(error)) from error
 
+    @app.post("/api/runs/{run_id}/traces/refresh")
+    async def refresh_traces(run_id: str) -> dict[str, object]:
+        try:
+            run = store.get_run(run_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Run not found") from error
+        if run["mode"] != "devin" or managed_runner is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Session traces are only available for managed Devin runs.",
+            )
+        try:
+            return await managed_runner.refresh_traces(run_id)
+        except RuntimeError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+
     @app.get("/api/runs/{run_id}/events")
     async def stream_events(
         run_id: str,
