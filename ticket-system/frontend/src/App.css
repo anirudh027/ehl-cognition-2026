@@ -1,0 +1,384 @@
+:root {
+  --bg: #0b0d12;
+  --panel: #14181f;
+  --panel-2: #1b212b;
+  --border: #262d3a;
+  --text: #e6e9ef;
+  --muted: #8d97a8;
+  --accent: #6ea8fe;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.topbar h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.health {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 400px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar,
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h2,
+.card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+/* form */
+.ticket-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ticket-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input,
+textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 8px 10px;
+  font: inherit;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  outline: 1px solid var(--accent);
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #08121f;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 14px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* lists */
+.ticket-list,
+.learnings,
+.subtasks,
+.criteria,
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-list li + li,
+.learnings li + li,
+.subtasks li + li {
+  margin-top: 8px;
+}
+
+.ticket-list button {
+  width: 100%;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-weight: 400;
+}
+
+.ticket-list button.active {
+  border-color: var(--accent);
+}
+
+.criteria {
+  margin: 8px 0;
+  padding-left: 18px;
+  list-style: disc;
+  color: var(--muted);
+}
+
+/* pills */
+.pill {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  width: fit-content;
+}
+
+.pill-done,
+.pill-approved,
+.pill-pass {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+}
+
+.pill-needs_human,
+.pill-revising,
+.pill-changes_requested {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.pill-failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.pill-planning,
+.pill-implementing,
+.pill-reviewing,
+.pill-retro,
+.pill-devin,
+.pill-mock,
+.pill-knowledge,
+.pill-playbook,
+.pill-blueprint {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* detail */
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-head h2 {
+  margin: 0;
+  text-transform: none;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.plan {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.metric {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.subtask {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.subtask-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.links {
+  display: flex;
+  gap: 14px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.feedback {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feedback textarea {
+  flex: 1;
+}
+
+/* timeline */
+.timeline-item {
+  border-left: 2px solid var(--border);
+  padding: 0 0 14px 14px;
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.timeline-item.level-success::before {
+  background: var(--success);
+}
+
+.timeline-item.level-warning::before {
+  background: var(--warning);
+}
+
+.timeline-item.level-error::before {
+  background: var(--danger);
+}
+
+.timeline-item p {
+  margin: 2px 0;
+}
+
+.timeline-head {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.role {
+  font-weight: 600;
+}
+
+.role-planner {
+  color: var(--accent);
+}
+
+.role-implementer {
+  color: var(--success);
+}
+
+.role-critic {
+  color: var(--warning);
+}
+
+.role-retrospective {
+  color: #c084fc;
+}
+
+.phase,
+.timeline-head time {
+  color: var(--muted);
+}
+
+.detail p.detail,
+p.detail {
+  color: var(--muted);
+  font-size: 13px;
+}
