@@ -9,6 +9,8 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
+from backend.app.devin import DevinClient, DevinConfig
+from backend.app.managed_runner import ManagedWorkflowRunner
 from backend.app.models import FollowUpCreate, RunCreate
 from backend.app.runner import WorkflowRunner
 from backend.app.store import Store
@@ -31,7 +33,13 @@ def create_app(
         else float(os.environ.get("BIO_DASHBOARD_STEP_DELAY", "0.45"))
     )
     store = Store(database)
-    runner = WorkflowRunner(store, artifacts, delay)
+    local_runner = WorkflowRunner(store, artifacts, delay)
+    devin_config = DevinConfig.from_environment()
+    managed_runner = (
+        ManagedWorkflowRunner(store, DevinClient(devin_config), artifacts)
+        if devin_config is not None
+        else None
+    )
     tasks: set[asyncio.Task[None]] = set()
     app = FastAPI(
         title="Bioengineering Orchestration Dashboard",
@@ -54,7 +62,12 @@ def create_app(
             command: shutil.which(command) is not None
             for command in ("mafft", "mkdssp", "mmseqs", "foldseek")
         }
-        return {"status": "ok", "mode": "local", "tools": tools}
+        return {
+            "status": "ok",
+            "default_mode": "local",
+            "devin_mode_available": managed_runner is not None,
+            "tools": tools,
+        }
 
     @app.get("/api/runs")
     async def list_runs(limit: int = Query(default=20, ge=1, le=100)) -> list[dict[str, object]]:
@@ -62,15 +75,30 @@ def create_app(
 
     @app.post("/api/runs", status_code=201)
     async def create_run(payload: RunCreate) -> dict[str, object]:
-        run, agents = store.create_run(payload.objective.strip())
+        if payload.mode == "devin" and managed_runner is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Managed Devin mode requires DEVIN_API_KEY with a supported cog_ "
+                    "service-user key or personal access token, plus DEVIN_ORG_ID."
+                ),
+            )
+        run, agents = store.create_run(payload.objective.strip(), payload.mode)
         store.add_event(
             str(run["id"]),
             "run_started",
             "Run accepted",
-            "The local coordinator is preparing the scientific workflow.",
+            (
+                "Managed Devin sessions are being prepared."
+                if payload.mode == "devin"
+                else "The local coordinator is preparing the scientific workflow."
+            ),
             tone="accent",
         )
-        task = asyncio.create_task(runner.run(str(run["id"]), agents))
+        selected_runner = managed_runner if payload.mode == "devin" else local_runner
+        if selected_runner is None:
+            raise HTTPException(status_code=503, detail="Managed Devin mode is unavailable.")
+        task = asyncio.create_task(selected_runner.run(str(run["id"]), agents))
         tasks.add(task)
         task.add_done_callback(tasks.discard)
         return store.get_run(str(run["id"]))
@@ -85,11 +113,17 @@ def create_app(
     @app.post("/api/runs/{run_id}/messages")
     async def follow_up(run_id: str, payload: FollowUpCreate) -> dict[str, object]:
         try:
-            return await runner.apply_follow_up(run_id, payload.message.strip())
+            run = store.get_run(run_id)
+            selected_runner = managed_runner if run["mode"] == "devin" else local_runner
+            if selected_runner is None:
+                raise ValueError("Managed Devin mode is not configured on this server.")
+            return await selected_runner.apply_follow_up(run_id, payload.message.strip())
         except KeyError as error:
             raise HTTPException(status_code=404, detail="Run not found") from error
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
 
     @app.get("/api/runs/{run_id}/events")
     async def stream_events(

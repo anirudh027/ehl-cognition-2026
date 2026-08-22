@@ -45,6 +45,9 @@ class Store:
             name TEXT NOT NULL,
             status TEXT NOT NULL,
             summary TEXT NOT NULL,
+            external_id TEXT,
+            url TEXT,
+            acus_consumed REAL NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
@@ -90,8 +93,26 @@ class Store:
         """
         with self._lock, self._connect() as connection:
             connection.executescript(schema)
+            columns = {
+                str(row["name"])
+                for row in connection.execute("PRAGMA table_info(agents)").fetchall()
+            }
+            migrations = {
+                "external_id": "ALTER TABLE agents ADD COLUMN external_id TEXT",
+                "url": "ALTER TABLE agents ADD COLUMN url TEXT",
+                "acus_consumed": (
+                    "ALTER TABLE agents ADD COLUMN acus_consumed REAL NOT NULL DEFAULT 0"
+                ),
+            }
+            for column, statement in migrations.items():
+                if column not in columns:
+                    connection.execute(statement)
 
-    def create_run(self, objective: str) -> tuple[dict[str, object], dict[str, str]]:
+    def create_run(
+        self,
+        objective: str,
+        mode: str = "local",
+    ) -> tuple[dict[str, object], dict[str, str]]:
         run_id = uuid4().hex[:12]
         created_at = timestamp()
         coordinator_id = uuid4().hex[:10]
@@ -108,9 +129,9 @@ class Store:
                 INSERT INTO runs
                 (id, objective, mode, status, stage, progress, result_version,
                  created_at, updated_at)
-                VALUES (?, ?, 'local', 'queued', 'Preparing run', 2, 1, ?, ?)
+                VALUES (?, ?, ?, 'queued', 'Preparing run', 2, 1, ?, ?)
                 """,
-                (run_id, objective, created_at, created_at),
+                (run_id, objective, mode, created_at, created_at),
             )
             connection.executemany(
                 """
@@ -155,15 +176,37 @@ class Store:
                 (*values.values(), run_id),
             )
 
-    def update_agent(self, agent_id: str, *, status: str, summary: str) -> None:
+    def update_agent(
+        self,
+        agent_id: str,
+        *,
+        status: str,
+        summary: str,
+        external_id: str | None = None,
+        url: str | None = None,
+        acus_consumed: float | None = None,
+    ) -> None:
         with self._lock, self._connect() as connection:
             connection.execute(
                 """
                 UPDATE agents
-                SET status = ?, summary = ?, updated_at = ?
+                SET status = ?,
+                    summary = ?,
+                    external_id = COALESCE(?, external_id),
+                    url = COALESCE(?, url),
+                    acus_consumed = COALESCE(?, acus_consumed),
+                    updated_at = ?
                 WHERE id = ?
                 """,
-                (status, summary, timestamp(), agent_id),
+                (
+                    status,
+                    summary,
+                    external_id,
+                    url,
+                    acus_consumed,
+                    timestamp(),
+                    agent_id,
+                ),
             )
 
     def add_event(

@@ -5,6 +5,9 @@ export type Agent = {
   name: string;
   status: string;
   summary: string;
+  external_id: string | null;
+  url: string | null;
+  acus_consumed: number;
 };
 
 export type RunEvent = {

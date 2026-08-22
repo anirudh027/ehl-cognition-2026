@@ -11,11 +11,11 @@ dependencies = [
   "biopython==1.88",
   "fastapi==0.116.1",
   "httpx==0.28.1",
-  "jsonschema",
-  "numpy",
-  "pandas",
+  "jsonschema==4.26.0",
+  "numpy==2.5.2",
+  "pandas==3.0.5",
   "pydantic==2.13.4",
-  "scipy",
+  "scipy==1.18.1",
   "uvicorn[standard]==0.35.0",
 ]
 

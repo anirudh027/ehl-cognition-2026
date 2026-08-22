@@ -20,10 +20,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function createRun(objective: string): Promise<Run> {
+export function createRun(objective: string, mode: "local" | "devin"): Promise<Run> {
   return request<Run>("/api/runs", {
     method: "POST",
-    body: JSON.stringify({ objective }),
+    body: JSON.stringify({ objective, mode }),
   });
 }
 

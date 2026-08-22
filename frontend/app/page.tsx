@@ -51,6 +51,14 @@ function AgentCard({ agent, child }: { agent: Agent; child?: boolean }) {
         {statusLabel(agent.status)}
       </span>
       <p>{agent.summary}</p>
+      {agent.url ? (
+        <div className="managed-agent-meta">
+          <a href={agent.url} target="_blank" rel="noreferrer">
+            Open Devin session
+          </a>
+          <span>{agent.acus_consumed.toFixed(2)} ACUs</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -115,6 +123,7 @@ function CandidateRow({ candidate, rank }: { candidate: Candidate; rank: number 
 
 export default function Home() {
   const [objective, setObjective] = useState(DEFAULT_OBJECTIVE);
+  const [mode, setMode] = useState<"local" | "devin">("local");
   const [run, setRun] = useState<Run | null>(null);
   const [followUp, setFollowUp] = useState(FOLLOW_UP_EXAMPLE);
   const [isStarting, setIsStarting] = useState(false);
@@ -180,7 +189,7 @@ export default function Home() {
     setIsStarting(true);
     setError(null);
     try {
-      setRun(await createRun(objective.trim()));
+      setRun(await createRun(objective.trim(), mode));
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : "Unable to start run");
     } finally {
@@ -219,7 +228,7 @@ export default function Home() {
         </div>
         <div className="local-badge">
           <span />
-          Local scientific demo
+          {run?.mode === "devin" ? "Managed Devin · uses ACUs" : "Local scientific demo"}
         </div>
       </header>
 
@@ -242,8 +251,28 @@ export default function Home() {
             minLength={12}
             required
           />
+          <div className="mode-picker" aria-label="Execution mode">
+            <button
+              type="button"
+              className={mode === "local" ? "active" : ""}
+              onClick={() => setMode("local")}
+            >
+              Local · zero ACUs
+            </button>
+            <button
+              type="button"
+              className={mode === "devin" ? "active" : ""}
+              onClick={() => setMode("devin")}
+            >
+              Managed Devin · uses credits
+            </button>
+          </div>
           <div className="objective-footer">
-            <span>Curated IsPETase demo dataset</span>
+            <span>
+              {mode === "devin"
+                ? "Real sessions · server-side credential · per-session ACU cap"
+                : "Curated IsPETase demo dataset"}
+            </span>
             <button type="submit" disabled={isStarting}>
               {isStarting ? "Starting…" : run ? "Start another run" : "Launch run"}
               <span aria-hidden="true">→</span>

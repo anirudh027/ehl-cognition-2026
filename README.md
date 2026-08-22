@@ -50,6 +50,17 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 npm --prefix frontend run dev
 
 Local state is written under `backend/.local/` and is excluded from Git.
 
+### Enable managed Devin credits
+
+Local mode remains the default and consumes no ACUs. Managed mode launches two specialist sessions and one coordinator session through the v3 Devin API.
+
+1. Open [Service users](https://app.devin.ai/settings/devin-api?tab=service-users#org-service-users-list), create a dedicated account, and assign a role with `UseDevinSessions`, `ViewOrgSessions`, and `ManageOrgSessions`.
+2. Generate its one-time `cog_` API key. A supported personal access token from the API Keys tab can be used instead.
+3. Copy `.env.devin.example` to `.env.devin`, enter the server-side key and organization ID, and choose the per-session ACU cap.
+4. Start the app and select **Managed Devin · uses credits** before launching a run.
+
+The browser receives only execution mode, session links, statuses, and ACU totals. It never receives the API key. One managed run creates three sessions, so a 2-ACU per-session cap permits a theoretical maximum of 6 ACUs. The app never launches managed sessions unless that mode is explicitly selected.
+
 ## CPU-native pipeline
 
 The `bioctl` pipeline searches a FASTA database with MMseqs2, aligns hits with MAFFT, and analyzes per-column conservation in Python/NumPy.
@@ -162,8 +173,8 @@ path and digest are pinned in the final report. The fourth smoke test is:
 
 ```bash
 # Python
-.venv/bin/ruff check backend bio_tools tests
-.venv/bin/ruff format --check backend bio_tools tests
+.venv/bin/ruff check backend
+.venv/bin/ruff format --check backend
 .venv/bin/pytest
 
 # Frontend

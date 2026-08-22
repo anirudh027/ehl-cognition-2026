@@ -217,6 +217,33 @@ footer {
   box-shadow: 0 0 0 4px rgba(11, 114, 86, 0.1);
 }
 
+.mode-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f4f7f5;
+}
+
+.mode-picker button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mode-picker button.active {
+  color: var(--green-dark);
+  background: white;
+  box-shadow: 0 2px 8px rgba(20, 50, 40, 0.08);
+}
+
 .objective-footer {
   display: flex;
   align-items: center;
@@ -494,6 +521,23 @@ footer {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.managed-agent-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 0 20px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.managed-agent-meta a {
+  color: var(--green);
+}
+
+.managed-agent-meta span {
+  color: var(--muted);
 }
 
 .guardrail {
@@ -949,6 +993,10 @@ footer {
   .objective-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .mode-picker {
+    grid-template-columns: 1fr;
   }
 
   .empty-grid,

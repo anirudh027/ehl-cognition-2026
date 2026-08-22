@@ -2,6 +2,7 @@ import time
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
 from backend.app.main import create_app
 
@@ -18,7 +19,9 @@ def wait_for_completion(client: TestClient, run_id: str) -> dict[str, object]:
     raise AssertionError("Run did not settle")
 
 
-def test_local_run_and_follow_up(tmp_path: Path) -> None:
+def test_local_run_and_follow_up(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.delenv("DEVIN_API_KEY", raising=False)
+    monkeypatch.delenv("DEVIN_ORG_ID", raising=False)
     app = create_app(
         database_path=tmp_path / "dashboard.sqlite3",
         runs_dir=tmp_path / "runs",
@@ -61,3 +64,26 @@ def test_local_run_and_follow_up(tmp_path: Path) -> None:
         download = client.get(f"/api/artifacts/{artifact['id']}")
         assert download.status_code == 200
         assert download.content
+
+
+def test_managed_mode_requires_supported_credentials(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEVIN_API_KEY", "apk_legacy")
+    monkeypatch.setenv("DEVIN_ORG_ID", "org-test")
+    app = create_app(
+        database_path=tmp_path / "dashboard.sqlite3",
+        runs_dir=tmp_path / "runs",
+        step_delay=0,
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/runs",
+            json={
+                "objective": "Develop a stable PETase candidate with catalytic function.",
+                "mode": "devin",
+            },
+        )
+    assert response.status_code == 503
+    assert "cog_" in response.json()["detail"]
