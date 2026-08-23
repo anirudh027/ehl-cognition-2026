@@ -1,0 +1,5 @@
+can you make it so that we can zoom in zoom out?
+
+---
+
+[Image #1]  there was this way of informations, how can we integrate these to the graph we are seeing here

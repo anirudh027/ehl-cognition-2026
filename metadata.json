@@ -3,8 +3,12 @@
   "checkpoint_id": "01M0PT88HTWN7BXP9F8444RQ3T",
   "strategy": "manual-commit",
   "branch": "feature/process-graph-mockup",
-  "checkpoints_count": 3,
-  "files_touched": null,
+  "checkpoints_count": 5,
+  "files_touched": [
+    "frontend/src/ProcessGraph.tsx",
+    "frontend/src/process-graph.css",
+    "frontend/src/processGraphMock.ts"
+  ],
   "sessions": [
     {
       "metadata": "/0/metadata.json",
@@ -12,13 +16,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 24,
-    "cache_creation_tokens": 72758,
-    "cache_read_tokens": 703923,
-    "output_tokens": 10556,
-    "api_call_count": 12
+    "input_tokens": 74,
+    "cache_creation_tokens": 110605,
+    "cache_read_tokens": 4716003,
+    "output_tokens": 33526,
+    "api_call_count": 37
   }
 }
