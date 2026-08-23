@@ -1,7 +1,7 @@
 ---
 id: lab-investigation-v1
 name: End-to-end laboratory investigation
-version: 2.0.0
+version: 2.1.0
 updated: 2026-08-23
 scope: the default protocol — any scientific question, from retrieval through calculation, simulation, and synthesis
 ---
@@ -11,9 +11,34 @@ scope: the default protocol — any scientific question, from retrieval through 
 The default protocol. It carries an investigation the whole way: understand the
 question, retrieve what is known, calculate, simulate where the question needs
 it, and synthesize a scientific answer. Run only the stages the question
-actually requires, in this order, each consuming the previous stage's output.
-The specialised protocols exist for deep single-domain work; this one should
-handle a staged, multi-part request on its own.
+actually requires, respecting the dependencies below rather than the stage
+numbering. The specialised protocols exist for deep single-domain work; this one
+should handle a staged, multi-part request on its own.
+
+## Execution — do independent work concurrently
+
+The stages are numbered for reading, not for scheduling. Before starting the
+work, decide which tasks are genuinely independent and run those at the same
+time rather than one after another; use your parallel execution to do it,
+keeping several retrievals or calculations in flight together.
+
+What is independent, in the common protein case: literature retrieval, the
+homolog search, and fetching the deposited structure depend only on the target
+being named, so start all three together. Independent ligands, independent
+mutants, and independent docking boxes are likewise parallel — fan them out
+instead of looping.
+
+What must stay ordered: conservation needs the homolog set and the alignment;
+residue annotation needs both the conservation mapping and the structure; the
+search box needs the residues those two stages identified; simulation needs the
+prepared receptor and ligands; synthesis needs every artifact it cites. Never
+start a dependent task on a guessed input to gain parallelism, and never let a
+concurrent branch's failure pass silently — join the branches, check each one
+produced its artifact, and report any that failed with the reason.
+
+Report progress per task as it lands rather than in one batch at the end, and
+keep `research_plan.json` current so the scientist can see which tasks are
+running together.
 
 ## Stage 0 — Plan
 
