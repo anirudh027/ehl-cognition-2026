@@ -1,0 +1,155 @@
+Documentation Index
+Fetch the complete documentation index at: /llms.txt
+
+Use this file to discover all available pages before exploring further.
+
+Skip to main content
+Search...
+
+
+
+Navigation
+Working with Devin
+Advanced Capabilities
+Working with Devin
+Advanced Capabilities
+
+Copy page
+
+Devin can orchestrate managed sessions in parallel, analyze past work, create playbooks, and keep your organization’s knowledge base current.
+
+These capabilities are available in every Devin session — just ask. You can also access prompt templates for each capability from the Explore Advanced Capabilities page on the Devin home page.
+Devin goes beyond writing code. It can break large tasks into parallel workstreams, learn from past sessions, build reusable playbooks, and keep your organization’s knowledge base current — all from any session.
+​
+What Devin can do for you
+Orchestrate managed Devins in parallel: Break down a large task and delegate pieces to a team of managed Devin sessions, each running in its own isolated VM
+Analyze session outcomes: Understand why a session succeeded or failed, identify patterns, and extract learnings
+Create and improve playbooks: Turn successful sessions into reusable playbooks, or refine existing ones based on feedback
+Manage knowledge: Deduplicate, consolidate, or create new knowledge entries from your codebase
+Manage schedules: Set up recurring or one-time automated Devin sessions
+These features work in any Devin session — just describe what you need. The Explore Advanced Capabilities page on the Devin home page provides ready-made prompt templates for common workflows.
+​
+Managed Devins
+Devin can break down large tasks and delegate them to a team of managed Devins working in parallel, each running in its own isolated VM. The coordinator session scopes the work, monitors progress, resolves conflicts, and compiles results.
+Devin automatically breaks down large tasks and delegates to managed Devins when it makes sense. You can also explicitly ask Devin to parallelize work — for example, “spin up a managed Devin for each module” or “run this playbook across all services in parallel.” Either way, Devin acts as the coordinator: scoping work, monitoring progress, resolving conflicts, and compiling results.
+This is the most powerful way to tackle work that spans many files, modules, or repositories — migrations, bulk test coverage, parallel research, and more. When the orchestration itself has structure — a wide fan-out with a combine step, or stages whose prompts are built from earlier results — ask for a dynamic workflow instead, so the coordination runs as a recorded, resumable script.
+What the coordinator can do:
+Spin up managed Devins — launch child sessions with specific prompts, playbooks, tags, and ACU limits
+Message child sessions — send follow-up instructions or clarifications to running sessions
+Monitor ACU consumption — track how much compute each child session is using
+Put child sessions to sleep or terminate them — pause or stop sessions that are stuck or no longer needed
+Schedule messages to itself — set reminders to check back on long-running child sessions
+Example: Parallelize a 50-file migration
+Ask Devin to analyze your codebase, group files into independent work packages, and launch one session per package — all running simultaneously:
+Analyze our codebase for all files using the legacy REST client.
+Group them into independent work packages that won't conflict,
+then start a parallel Devin session for each package to migrate
+to the new GraphQL client. Use the "REST to GraphQL Migration"
+playbook for each session.
+See Migrate 50 Files from REST to GraphQL for a full walkthrough.
+Example: Run the same task across multiple modules
+Launch multiple Devin sessions at once for repetitive tasks — each session runs independently on its own machine:
+Run the test coverage report, find the 8 modules below 50%
+coverage, and start a parallel Devin session for each module
+using our test-writing playbook. Open a separate PR for each.
+Devin analyzes your request and proposes the sessions for your approval before launching them. See Batch Test Coverage for a full walkthrough.
+​
+Analyzing sessions
+Have Devin examine one or more past sessions to understand what happened and why. This is useful for:
+Understanding why a session didn’t complete as expected
+Identifying what worked well in a successful session
+Extracting patterns and insights from multiple sessions
+To analyze a session, share the session link and describe what you want to learn:
+This session used 42 ACUs to add pagination to GET /api/users.
+I expected ~12. Break down where Devin spent the most time,
+what dead ends it tried, and give me a revised prompt that
+would avoid these issues.
+Devin examines the session history, identifies key events, and provides actionable insights.
+​
+Creating and improving playbooks
+Turn a successful session into a reusable playbook, or refine an existing one based on real-world feedback.
+Creating a playbook from a session: Share one or more session links and describe the playbook you want. Devin analyzes the sessions and produces a structured playbook with procedures, specifications, and advice.
+This session diagnosed and fixed a memory leak in our payments
+service. Create a reusable hotfix playbook for memory-leak
+incidents that any on-call engineer can attach to a new session.
+Improving an existing playbook: Reference the playbook and share sessions where it fell short. Devin compares successes and failures to propose targeted improvements.
+Our !db-migration playbook keeps failing on foreign key
+constraints. Here are 4 recent sessions — analyze the failures,
+compare them to the successes, and update the playbook to handle
+FK dependencies.
+​
+Managing knowledge
+Maintain and improve your organization’s knowledge base:
+Find and merge duplicate knowledge entries
+Resolve conflicting guidance
+Create new knowledge from codebase patterns
+Review all knowledge entries and identify duplicates or highly
+similar entries. For each set of duplicates, propose a
+consolidated version.
+​
+Managing schedules
+Set up recurring or one-time scheduled Devin sessions for automated workflows like nightly test runs, weekly knowledge maintenance, or daily health checks.
+Create a schedule that runs every Monday at 8 AM to review
+pending knowledge suggestions, deduplicate entries, and resolve
+conflicting guidance.
+See Scheduled Sessions for more details.
+​
+Best practices
+​
+Analyzing sessions effectively
+When analyzing sessions, be specific about what you want to learn. Instead of asking “What happened?”, try:
+“Why did Devin choose this approach instead of the alternative?”
+“What caused the test failures in this session?”
+“What patterns can we extract to create a playbook?”
+​
+Creating useful playbooks
+When creating playbooks from sessions:
+Provide multiple successful sessions if available to help Devin identify common patterns
+Describe the intended audience and use case for the playbook
+Specify any constraints or requirements that should be included
+​
+Managing knowledge at scale
+For large knowledge bases:
+Start with deduplication to reduce noise
+Then resolve conflicts to ensure consistency
+Finally, fill gaps by creating knowledge from codebase analysis
+​
+Using these features via the Devin MCP
+All of the capabilities described above — and more — are available through the Devin MCP server. Any Devin session or MCP-compatible AI agent can access them directly.
+​
+Session management
+Create one or more Devin sessions programmatically, each with its own prompt, playbook, tags, and ACU limit. Search and filter across your organization’s sessions by tags, playbook, origin, user, or time range. Inspect any session’s full event timeline — list event summaries, fetch detailed event contents, or search across events by text. Send messages to running sessions, terminate or archive them, and manage session tags. After launching parallel sessions, wait for all of them to finish in a single call instead of polling individually.
+​
+Playbook management
+List, create, update, and delete playbooks. Attach automation macros to playbooks for trigger-based workflows. Use this to build playbooks from scratch, iterate on existing ones, or clean up unused playbooks.
+​
+Knowledge management
+Full control over your organization’s knowledge base: create, read, update, and delete knowledge notes. Browse the folder structure, filter notes by repo or folder, and search across note names, triggers, and content. Review, view, and dismiss pending knowledge suggestions that Devin generates from sessions.
+​
+Schedule management
+Create and manage scheduled Devin sessions — both recurring (via cron expressions) and one-time. Update schedule frequency, toggle schedules on and off, choose notification preferences, and select which agent to run. This lets you set up automated workflows like nightly test runs, weekly knowledge maintenance, or daily health checks.
+​
+Integration management
+View all native integrations (such as GitHub, Jira, and Slack) and MCP servers configured for your organization. Check which integrations are installed, find setup URLs for ones that aren’t, and get configuration links for ones that are — letting Devin help you manage your integration landscape.
+​
+Repository documentation
+Query and search documentation for any GitHub repository your account has access to. Get a structured list of documentation topics, read full wiki contents, or ask natural-language questions and receive AI-powered, context-grounded answers. List all repositories available to your Devin account.
+See the Devin MCP documentation for setup instructions and the full tool reference.
+​
+Permissions
+These advanced capabilities require the UseDevinExpert permission, which is included in the default org_member and org_admin roles, so all organization members have access by default.
+If you need to restrict access, you can create a custom role without this permission and assign it to specific users.
+Devin CLI
+Dynamic Workflows
+Ask a question...
+
+
+linkedin
+x
+Powered by
+This documentation is built and hosted on Mintlify, a developer documentation platform
+ look at these capabilities which ones, can we used in our project
+
+---
+
+yes, show me as a architecture sketch, how the code architecture will change
