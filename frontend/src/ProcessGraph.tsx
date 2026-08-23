@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { EDGES, GROUPS, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
+import { BRIEF, EDGES, GROUPS, META, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
 import { StructureViewer } from "./StructureViewer";
 import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
@@ -38,6 +38,8 @@ const COLUMN_LABELS = [
 export function ProcessGraph() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [panelTab, setPanelTab] = useState<"log" | "brief" | "limits">("log");
+  const [panelOpen, setPanelOpen] = useState(true);
   const [panning, setPanning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(1);
@@ -108,6 +110,26 @@ export function ProcessGraph() {
     return new Set([...up, ...down, selectedId]);
   }, [selectedId]);
 
+  const chronological = useMemo(
+    () =>
+      NODES.filter((node) => node.log?.length)
+        .slice()
+        // "—" marks a task that has not reported yet; those sort last.
+        .sort((a, b) => {
+          const key = (node: GraphNode) => (!node.at || node.at === "—" ? "99:99" : node.at);
+          return key(a).localeCompare(key(b));
+        }),
+    [],
+  );
+
+  const allLimitations = useMemo(
+    () =>
+      NODES.flatMap((node) =>
+        (node.limitations ?? []).map((text) => ({ id: node.id, title: node.title, text })),
+      ),
+    [],
+  );
+
   const maxLane = Math.max(...NODES.map((node) => node.lane));
   const maxCol = Math.max(...NODES.map((node) => node.col));
   const width = PAD_X * 2 + maxCol * COL_W + NODE_W;
@@ -161,6 +183,17 @@ export function ProcessGraph() {
         <div>
           <p className="pg-eyebrow">Investigation graph · mock data</p>
           <h2>Raise IsPETase activity at 50 °C</h2>
+          <p className="pg-meta">
+            <span className="pg-live">
+              <span className="pg-pulse" />
+              {META.state}
+            </span>
+            <span>{META.elapsed}</span>
+            <span>
+              {META.taskCount} tasks · {META.outputCount} saved outputs
+            </span>
+            <span>Protocol: {META.protocol}</span>
+          </p>
         </div>
         <ul className="pg-legend">
           {(["RUNNING", "COMPLETED", "FAILED", "SKIPPED", "PLANNED"] as MockStatus[]).map((status) => (
@@ -187,6 +220,7 @@ export function ProcessGraph() {
       </header>
 
       <div className="pg-main">
+      <div className="pg-graph-col">
       <div
         className={`pg-scroll ${panning ? "is-panning" : ""}`}
         ref={scrollRef}
@@ -378,6 +412,138 @@ export function ProcessGraph() {
           })}
         </div>
         </div>
+      </div>
+
+      <section className={`pg-panel ${panelOpen ? "is-open" : ""}`}>
+        <div className="pg-panel-tabs">
+          {([
+            ["log", "Execution log"],
+            ["brief", "Research brief"],
+            ["limits", "Scientific limitations"],
+          ] as const).map(([key, label]) => (
+            <button
+              type="button"
+              key={key}
+              className={panelTab === key && panelOpen ? "is-active" : ""}
+              onClick={() => {
+                if (panelTab === key) setPanelOpen((open) => !open);
+                else {
+                  setPanelTab(key);
+                  setPanelOpen(true);
+                }
+              }}
+            >
+              {label}
+              {key === "limits" ? <b>{allLimitations.length}</b> : null}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="pg-panel-toggle"
+            onClick={() => setPanelOpen((open) => !open)}
+            aria-label={panelOpen ? "Collapse panel" : "Expand panel"}
+          >
+            {panelOpen ? "▾" : "▴"}
+          </button>
+        </div>
+
+        {panelOpen ? (
+          <div className="pg-panel-body">
+            {panelTab === "log" ? (
+              <ol className="pg-log">
+                {chronological.map((node) => (
+                  <li
+                    key={node.id}
+                    className={`${node.id === selectedId ? "is-current" : ""} status-${node.status.toLowerCase()}`}
+                  >
+                    <button type="button" onClick={() => setSelectedId(node.id)}>
+                      <span className="pg-log-time">{node.at}</span>
+                      <span className="pg-log-body">
+                        <span className="pg-log-head">
+                          <b>{node.title}</b>
+                          <span className="pg-log-cap">{node.capability}</span>
+                          <span className="pg-log-status">{STATUS_LABEL[node.status]}</span>
+                        </span>
+                        {node.log?.map((line) => (
+                          <span className="pg-log-line" key={line}>
+                            {line}
+                          </span>
+                        ))}
+                        {node.counterEvidence ? (
+                          <span className="pg-log-counter">⚑ {node.counterEvidence}</span>
+                        ) : null}
+                        {node.outputs?.length ? (
+                          <span className="pg-log-outputs">
+                            {node.outputs.map((file) => (
+                              <em key={file}>{file}</em>
+                            ))}
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+
+            {panelTab === "brief" ? (
+              <div className="pg-brief">
+                <p className="pg-brief-lead">{BRIEF.objective}</p>
+                <div className="pg-brief-cols">
+                  <div>
+                    <h4>Questions</h4>
+                    <ul>
+                      {BRIEF.questions.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Assumptions</h4>
+                    <ul>
+                      {BRIEF.assumptions.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Required inputs</h4>
+                    <div className="pg-chips">
+                      {BRIEF.inputs.map((file) => (
+                        <span className="pg-file" key={file}>
+                          {file}
+                        </span>
+                      ))}
+                    </div>
+                    <h4 style={{ marginTop: 12 }}>Capabilities</h4>
+                    <div className="pg-chips">
+                      {META.capabilities.map((cap) => (
+                        <span className="pg-chip" key={cap}>
+                          {cap}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="pg-brief-foot">Updated {META.updated}</p>
+              </div>
+            ) : null}
+
+            {panelTab === "limits" ? (
+              <ul className="pg-limit-list">
+                {allLimitations.map((entry) => (
+                  <li key={`${entry.id}-${entry.text}`}>
+                    <button type="button" onClick={() => setSelectedId(entry.id)}>
+                      <span className="pg-limit-src">{entry.title}</span>
+                      <span>{entry.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
       </div>
 
       {!selected ? (

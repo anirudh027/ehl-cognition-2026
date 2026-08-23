@@ -49,6 +49,8 @@ export type GraphNode = {
   taskNumber?: number;
   /** Wall-clock the task consumed, or has consumed so far. */
   duration?: string;
+  /** Clock time the task reported in, for the chronological log. */
+  at?: string;
   /** Artifact filenames this task wrote. */
   outputs?: string[];
   /** What the agent actually did, in its own words — the execution log,
@@ -89,6 +91,7 @@ export const NODES: GraphNode[] = [
     thumb: "none",
     methods: ["operator brief"],
     metric: { label: "target", value: "PETase / PET hydrolysis" },
+    at: "08:00",
   },
   {
     id: "plan",
@@ -100,6 +103,7 @@ export const NODES: GraphNode[] = [
     thumb: "none",
     methods: ["protein_engineering_v2"],
     metric: { label: "tasks", value: "11 planned" },
+    at: "08:02",
   },
 
   {
@@ -120,6 +124,7 @@ export const NODES: GraphNode[] = [
       "jackhmmer against UniRef90, 3 iterations, gathering to e<1e-5.",
       "412 hits retained after removing fragments under 60% coverage.",
     ],
+    at: "08:05",
   },
 
   // --- three competing structure predictions -------------------------------
@@ -158,6 +163,7 @@ export const NODES: GraphNode[] = [
       focus: null,
       overview: true,
     },
+    at: "08:06",
   },
   {
     id: "fold-b",
@@ -205,6 +211,7 @@ export const NODES: GraphNode[] = [
       stability: [121, 186, 280],
       focus: 159,
     },
+    at: "08:06",
   },
   {
     id: "fold-c",
@@ -231,6 +238,7 @@ export const NODES: GraphNode[] = [
       "pLDDT plateaued at 58.9 by residue 190 and stopped climbing; killed at 41% " +
         "and the GPU was handed back to run 1.",
     ],
+    at: "08:06",
   },
   // -------------------------------------------------------------------------
 
@@ -249,6 +257,7 @@ export const NODES: GraphNode[] = [
     duration: "4m 02s",
     outputs: ["literature.json"],
     log: ["PubMed and EuropePMC, 2019 onward; 38 abstracts screened, 12 read in full."],
+    at: "08:06",
   },
   {
     id: "foldseek",
@@ -264,6 +273,7 @@ export const NODES: GraphNode[] = [
     taskNumber: 6,
     duration: "0m 38s",
     log: ["Three attempts against the Foldseek web API, all 503. Branch abandoned."],
+    at: "08:06",
   },
 
   {
@@ -283,6 +293,7 @@ export const NODES: GraphNode[] = [
       "MAFFT L-INS-i over the 412 homologs, Shannon entropy per column.",
       "268 columns informative; the four lowest-entropy positions sit in the groove.",
     ],
+    at: "08:12",
   },
   {
     id: "burial",
@@ -304,6 +315,7 @@ export const NODES: GraphNode[] = [
       "DSSP secondary structure and per-residue RSA, scored across both surviving folds.",
       "141 residues buried in both. 9 flip exposure between them — all in the groove loop.",
     ],
+    at: "08:48",
   },
   {
     id: "claims",
@@ -319,6 +331,7 @@ export const NODES: GraphNode[] = [
     duration: "5m 51s",
     outputs: ["claims.json"],
     log: ["17 claims extracted with DOIs; 5 concern thermostability directly."],
+    at: "08:12",
   },
 
   {
@@ -356,6 +369,7 @@ export const NODES: GraphNode[] = [
       focus: null,
       overview: true,
     },
+    at: "08:50",
   },
   {
     id: "control",
@@ -376,6 +390,7 @@ export const NODES: GraphNode[] = [
       "Null signal 0.04 against 0.61 observed — the conservation signal is not an artefact " +
         "of the scoring pipeline.",
     ],
+    at: "08:52",
   },
 
   {
@@ -397,6 +412,7 @@ export const NODES: GraphNode[] = [
       "Backbone RMSD is flattening near 1.8 Å on the run-1 replicas. Nothing parsed yet — " +
         "metrics will be reported only once the runs finish.",
     ],
+    at: "08:53",
   },
   {
     id: "docking",
@@ -416,6 +432,7 @@ export const NODES: GraphNode[] = [
         "uncurated set would produce scores that look quantitative but are not.",
     ],
     limitations: ["No binding-affinity evidence anywhere in this investigation."],
+    at: "08:53",
   },
   {
     id: "panel",
@@ -432,6 +449,7 @@ export const NODES: GraphNode[] = [
     duration: "2m 05s",
     outputs: ["variants.csv"],
     log: ["6 variants designed across the 9 cross-model sites, sized for a single assay plate."],
+    at: "08:55",
   },
 
   {
@@ -447,6 +465,7 @@ export const NODES: GraphNode[] = [
     taskNumber: 15,
     duration: "queued",
     log: ["Waiting on the stability screen before findings can be written."],
+    at: "—",
   },
 ];
 
@@ -487,3 +506,43 @@ export const RACES: RaceGroup[] = [
     rule: "kill below pLDDT 70 · keep structurally distinct survivors",
   },
 ];
+
+/** Header metadata, mirroring the run summary the operator sees elsewhere. */
+export const META = {
+  protocol: "End-to-end laboratory investigation (default)",
+  state: "Working in the sandbox…",
+  elapsed: "97m 42s",
+  taskCount: 15,
+  outputCount: 12,
+  updated: "23 Aug, 09:58",
+  capabilities: [
+    "Literature Search",
+    "Sequence Analysis",
+    "Structure Analysis",
+    "Molecular Simulation",
+    "Candidate Ranking",
+    "Data Analysis",
+    "Research Synthesis",
+  ],
+};
+
+/** The brief the investigation was launched from. */
+export const BRIEF = {
+  objective:
+    "Raise the catalytic activity of IsPETase (Ideonella sakaiensis PETase) at 50 °C " +
+    "without losing the fold. The wild-type enzyme degrades PET efficiently near 30 °C " +
+    "but loses structure well below the glass-transition temperature of PET, which is " +
+    "where industrial depolymerisation would have to run. Identify substitutions that " +
+    "buy thermal margin, and say plainly which of them are predicted to cost activity.",
+  questions: [
+    "Which positions carry conservation signal that is not an artefact of the scoring pipeline?",
+    "Does the substrate groove sample an open state, and does that change which sites matter?",
+    "Which candidates survive when scored against more than one predicted conformation?",
+  ],
+  assumptions: [
+    "Public data only — no in-house assay results enter the ranking.",
+    "Structure prediction stands in for an experimental structure of the variant.",
+    "Ranking is predictive; nothing here has been tested at the bench.",
+  ],
+  inputs: ["target_ispetase.fasta", "homolog_db.fasta", "protein_engineering_v2 playbook"],
+};
