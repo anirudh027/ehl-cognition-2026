@@ -3,8 +3,10 @@
   "checkpoint_id": "01M0PT455TKZFWGMBPCZWVVGWG",
   "strategy": "manual-commit",
   "branch": "codex-structure-auto-rotate",
-  "checkpoints_count": 1,
-  "files_touched": null,
+  "checkpoints_count": 2,
+  "files_touched": [
+    "frontend/src/StructureViewer.tsx"
+  ],
   "sessions": [
     {
       "metadata": "/0/metadata.json",
@@ -12,13 +14,20 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 210001,
+    "input_tokens": 222554,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 4223225,
-    "output_tokens": 24141,
-    "api_call_count": 71
+    "output_tokens": 24234,
+    "api_call_count": 72
   }
 }
