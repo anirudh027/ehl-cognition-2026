@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M0PXBQCFDB5XFD44SPQ055PW",
+  "strategy": "manual-commit",
+  "branch": "feature/devin-capability-probe",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "backend/app/devin.py",
+    "backend/app/executor.py",
+    "backend/app/main.py",
+    "backend/app/models.py",
+    "backend/app/store.py",
+    "frontend/src/types.ts",
+    "tests/test_fanout.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 32,
+    "cache_creation_tokens": 19063,
+    "cache_read_tokens": 2381697,
+    "output_tokens": 12328,
+    "api_call_count": 16
+  }
+}
