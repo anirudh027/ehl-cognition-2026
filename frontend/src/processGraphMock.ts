@@ -19,6 +19,9 @@ export type ThumbKind =
   | "docking"
   | "none";
 
+/** Result of a race between sibling attempts at the same task. */
+export type RaceOutcome = "kept" | "pruned";
+
 export type GraphNode = {
   id: string;
   col: number;
@@ -28,23 +31,32 @@ export type GraphNode = {
   capability: string;
   status: MockStatus;
   thumb: ThumbKind;
+  /** Distinguishes generated previews between sibling runs. */
+  thumbVariant?: number;
   methods: string[];
   metric?: { label: string; value: string };
   note?: string;
   /** Present when the node is a control / validation run rather than a step. */
   test?: { label: string; passed: boolean };
+  /** Several independent tasks running at the same time. */
   parallelGroup?: string;
+  /** Several attempts at the SAME task, competing; only the winner is kept. */
+  raceGroup?: string;
+  outcome?: RaceOutcome;
 };
 
 export type GraphEdge = { from: string; to: string };
 
 export type ParallelGroup = { id: string; col: number; label: string };
 
+/** A cluster of competing attempts, drawn as a bracket inside its column. */
+export type RaceGroup = { id: string; col: number; label: string; rule: string };
+
 export const NODES: GraphNode[] = [
   {
     id: "objective",
     col: 0,
-    lane: 1.5,
+    lane: 2.5,
     title: "Raise IsPETase activity at 50 °C",
     capability: "request",
     status: "COMPLETED",
@@ -55,13 +67,13 @@ export const NODES: GraphNode[] = [
   {
     id: "plan",
     col: 1,
-    lane: 1.5,
+    lane: 2.5,
     title: "Plan the investigation",
     capability: "planner",
     status: "COMPLETED",
     thumb: "none",
     methods: ["protein_engineering_v2"],
-    metric: { label: "tasks", value: "9 planned" },
+    metric: { label: "tasks", value: "11 planned" },
   },
 
   {
@@ -76,22 +88,61 @@ export const NODES: GraphNode[] = [
     metric: { label: "hits", value: "412 @ e<1e-5" },
     parallelGroup: "fan-1",
   },
+
+  // --- three competing structure predictions -------------------------------
   {
-    id: "fold",
+    id: "fold-a",
     col: 2,
     lane: 1,
-    title: "Predict structure",
+    title: "Predict structure · run 1",
     capability: "structure",
     status: "COMPLETED",
     thumb: "fold",
-    methods: ["AlphaFold2", "5 models"],
+    thumbVariant: 0,
+    methods: ["AlphaFold2", "seed 1", "full MSA"],
     metric: { label: "mean pLDDT", value: "91.4" },
     parallelGroup: "fan-1",
+    raceGroup: "fold-race",
+    outcome: "kept",
   },
+  {
+    id: "fold-b",
+    col: 2,
+    lane: 2,
+    title: "Predict structure · run 2",
+    capability: "structure",
+    status: "COMPLETED",
+    thumb: "fold",
+    thumbVariant: 1,
+    methods: ["AlphaFold2", "seed 2", "shallow MSA"],
+    metric: { label: "mean pLDDT", value: "74.2" },
+    note: "Finished, but 17.2 pLDDT below run 1 — discarded after the race.",
+    parallelGroup: "fan-1",
+    raceGroup: "fold-race",
+    outcome: "pruned",
+  },
+  {
+    id: "fold-c",
+    col: 2,
+    lane: 3,
+    title: "Predict structure · run 3",
+    capability: "structure",
+    status: "SKIPPED",
+    thumb: "fold",
+    thumbVariant: 2,
+    methods: ["ESMFold", "single sequence"],
+    metric: { label: "pLDDT @ stop", value: "58.9" },
+    note: "Killed at 41% — pLDDT plateaued under the 70 floor, so compute was released to run 1.",
+    parallelGroup: "fan-1",
+    raceGroup: "fold-race",
+    outcome: "pruned",
+  },
+  // -------------------------------------------------------------------------
+
   {
     id: "literature",
     col: 2,
-    lane: 2,
+    lane: 4,
     title: "Scan literature",
     capability: "literature",
     status: "COMPLETED",
@@ -103,7 +154,7 @@ export const NODES: GraphNode[] = [
   {
     id: "foldseek",
     col: 2,
-    lane: 3,
+    lane: 5,
     title: "Remote fold search",
     capability: "structure",
     status: "FAILED",
@@ -127,18 +178,19 @@ export const NODES: GraphNode[] = [
   {
     id: "burial",
     col: 3,
-    lane: 1,
+    lane: 1.6,
     title: "Confidence & burial",
     capability: "structure",
     status: "COMPLETED",
     thumb: "plddt",
     methods: ["DSSP", "per-residue RSA"],
     metric: { label: "buried", value: "141 residues" },
+    note: "Runs on the winning fold only.",
   },
   {
     id: "claims",
     col: 3,
-    lane: 2,
+    lane: 4,
     title: "Extract prior claims",
     capability: "literature",
     status: "COMPLETED",
@@ -150,7 +202,7 @@ export const NODES: GraphNode[] = [
   {
     id: "ranking",
     col: 4,
-    lane: 0.5,
+    lane: 1,
     title: "Rank candidate sites",
     capability: "design",
     status: "COMPLETED",
@@ -161,7 +213,7 @@ export const NODES: GraphNode[] = [
   {
     id: "control",
     col: 4,
-    lane: 2.2,
+    lane: 3.2,
     title: "Scrambled-MSA control",
     capability: "validation",
     status: "COMPLETED",
@@ -174,7 +226,7 @@ export const NODES: GraphNode[] = [
   {
     id: "md",
     col: 5,
-    lane: 0,
+    lane: 0.4,
     title: "MD stability screen",
     capability: "simulation",
     status: "RUNNING",
@@ -186,7 +238,7 @@ export const NODES: GraphNode[] = [
   {
     id: "docking",
     col: 5,
-    lane: 1.2,
+    lane: 1.6,
     title: "Docking screen",
     capability: "simulation",
     status: "SKIPPED",
@@ -198,7 +250,7 @@ export const NODES: GraphNode[] = [
   {
     id: "panel",
     col: 5,
-    lane: 2.4,
+    lane: 2.8,
     title: "Mutagenesis panel",
     capability: "design",
     status: "COMPLETED",
@@ -211,7 +263,7 @@ export const NODES: GraphNode[] = [
   {
     id: "synthesis",
     col: 6,
-    lane: 1.2,
+    lane: 1.6,
     title: "Synthesise findings",
     capability: "synthesis",
     status: "PLANNED",
@@ -224,11 +276,14 @@ export const NODES: GraphNode[] = [
 export const EDGES: GraphEdge[] = [
   { from: "objective", to: "plan" },
   { from: "plan", to: "homologs" },
-  { from: "plan", to: "fold" },
+  { from: "plan", to: "fold-a" },
+  { from: "plan", to: "fold-b" },
+  { from: "plan", to: "fold-c" },
   { from: "plan", to: "literature" },
   { from: "plan", to: "foldseek" },
   { from: "homologs", to: "conservation" },
-  { from: "fold", to: "burial" },
+  // only the surviving fold feeds downstream work
+  { from: "fold-a", to: "burial" },
   { from: "literature", to: "claims" },
   { from: "conservation", to: "ranking" },
   { from: "burial", to: "ranking" },
@@ -242,6 +297,15 @@ export const EDGES: GraphEdge[] = [
 ];
 
 export const GROUPS: ParallelGroup[] = [
-  { id: "fan-1", col: 2, label: "4 tasks in parallel" },
+  { id: "fan-1", col: 2, label: "6 tasks in parallel" },
   { id: "fan-2", col: 5, label: "3 tasks in parallel" },
+];
+
+export const RACES: RaceGroup[] = [
+  {
+    id: "fold-race",
+    col: 2,
+    label: "3 competing runs",
+    rule: "keep highest pLDDT · kill below 70",
+  },
 ];

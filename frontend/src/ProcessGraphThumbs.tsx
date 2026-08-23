@@ -25,14 +25,34 @@ function Frame({ children, dim }: { children: ReactNode; dim?: boolean }) {
   );
 }
 
-/** AlphaFold-style ribbon, coloured by the canonical pLDDT palette. */
-function FoldThumb() {
-  const segments = [
-    { d: "M10 70 Q 24 38 38 58 Q 50 76 62 48", c: "#0053d6" },
-    { d: "M62 48 Q 74 20 92 33 Q 108 44 104 64", c: "#65cbf3" },
-    { d: "M104 64 Q 100 84 118 80 Q 138 76 142 54", c: "#ffdb13" },
-    { d: "M142 54 Q 146 30 164 27 Q 182 24 190 42", c: "#ff7d45" },
+/** AlphaFold-style ribbon, coloured by the canonical pLDDT palette.
+ *  `variant` distinguishes competing runs: 0 is a confident fold, 2 is the
+ *  low-confidence one that gets pruned. */
+function FoldThumb({ variant = 0 }: { variant?: number }) {
+  const PALETTES = [
+    ["#0053d6", "#0053d6", "#65cbf3", "#0053d6", "#65cbf3"],
+    ["#65cbf3", "#0053d6", "#ffdb13", "#65cbf3", "#ffdb13"],
+    ["#ffdb13", "#ff7d45", "#ffdb13", "#ff7d45", "#ff7d45"],
   ];
+  const palette = PALETTES[Math.min(variant, PALETTES.length - 1)];
+  const next = rng([5, 19, 41][Math.min(variant, 2)]);
+  const count = palette.length;
+
+  // Spread control points across the box, then join them with quadratic
+  // curves whose control point is pushed off the chord — reads as a ribbon.
+  const pts = Array.from({ length: count + 1 }, (_, i) => {
+    const x = 12 + (i / count) * (BOX.w - 24);
+    const y = 22 + next() * 48;
+    return [x, y] as const;
+  });
+
+  const segments = pts.slice(0, -1).map(([x, y], i) => {
+    const [nx, ny] = pts[i + 1];
+    const mx = (x + nx) / 2;
+    const my = (y + ny) / 2 + (next() - 0.5) * 58;
+    return { d: `M${x.toFixed(1)} ${y.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)}, ${nx.toFixed(1)} ${ny.toFixed(1)}`, c: palette[i] };
+  });
+
   return (
     <Frame>
       <rect width={BOX.w} height={BOX.h} fill="#f4f8f6" />
@@ -46,13 +66,6 @@ function FoldThumb() {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-      ))}
-      {[
-        [30, 30],
-        [122, 22],
-        [172, 62],
-      ].map(([cx, cy]) => (
-        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={2.5} fill="#16241f" opacity={0.18} />
       ))}
     </Frame>
   );
@@ -232,8 +245,8 @@ function DockingThumb() {
   );
 }
 
-export function Thumb({ kind }: { kind: string }) {
-  if (kind === "fold") return <FoldThumb />;
+export function Thumb({ kind, variant }: { kind: string; variant?: number }) {
+  if (kind === "fold") return <FoldThumb variant={variant} />;
   if (kind === "plddt") return <PlddtThumb />;
   if (kind === "conservation") return <ConservationThumb />;
   if (kind === "contact") return <ContactThumb />;

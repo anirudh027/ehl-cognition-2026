@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { EDGES, GROUPS, NODES, type GraphNode, type MockStatus } from "./processGraphMock";
+import { EDGES, GROUPS, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
 import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
 
@@ -111,6 +111,30 @@ export function ProcessGraph() {
             );
           })}
 
+          {RACES.map((race) => {
+            const members = NODES.filter((node) => node.raceGroup === race.id);
+            if (!members.length) return null;
+            const top = Math.min(...members.map(nodeY));
+            const bottom = Math.max(...members.map(nodeY)) + NODE_H;
+            return (
+              <div
+                key={race.id}
+                className="pg-race"
+                style={{
+                  left: PAD_X + race.col * COL_W - 6,
+                  top: top - 8,
+                  width: NODE_W + 12,
+                  height: bottom - top + 16,
+                }}
+              >
+                <span className="pg-race-tag">
+                  <b>{race.label}</b>
+                  <em>{race.rule}</em>
+                </span>
+              </div>
+            );
+          })}
+
           <svg className="pg-edges" width={width} height={height} aria-hidden>
             {EDGES.map((edge) => {
               const from = byId.get(edge.from);
@@ -122,7 +146,11 @@ export function ProcessGraph() {
               const y2 = nodeY(to) + NODE_H / 2;
               const bend = Math.max(36, (x2 - x1) * 0.5);
               const lit = !!lineage && lineage.has(edge.from) && lineage.has(edge.to);
-              const inert = to.status === "SKIPPED" || to.status === "PLANNED" || from.status === "FAILED";
+              const inert =
+                to.status === "SKIPPED" ||
+                to.status === "PLANNED" ||
+                from.status === "FAILED" ||
+                to.outcome === "pruned";
               return (
                 <path
                   key={`${edge.from}-${edge.to}`}
@@ -139,7 +167,7 @@ export function ProcessGraph() {
               <button
                 type="button"
                 key={node.id}
-                className={`pg-node status-${node.status.toLowerCase()} ${node.id === selectedId ? "is-selected" : ""} ${dimmed ? "is-dimmed" : ""}`}
+                className={`pg-node status-${node.status.toLowerCase()} ${node.outcome ? `outcome-${node.outcome}` : ""} ${node.id === selectedId ? "is-selected" : ""} ${dimmed ? "is-dimmed" : ""}`}
                 style={{ left: nodeX(node), top: nodeY(node), width: NODE_W, height: NODE_H }}
                 onClick={() => setSelectedId((current) => (current === node.id ? null : node.id))}
                 aria-pressed={node.id === selectedId}
@@ -157,7 +185,7 @@ export function ProcessGraph() {
                 <span className="pg-body">
                   {node.thumb !== "none" ? (
                     <span className="pg-thumb">
-                      <Thumb kind={node.thumb} />
+                      <Thumb kind={node.thumb} variant={node.thumbVariant} />
                     </span>
                   ) : node.note ? (
                     <span className="pg-note">{node.note}</span>
@@ -176,7 +204,13 @@ export function ProcessGraph() {
                   </span>
                 ) : node.metric ? (
                   <span className="pg-metric">
-                    <em>{node.metric.label}</em>
+                    {node.outcome ? (
+                      <span className={`pg-outcome is-${node.outcome}`}>
+                        {node.outcome === "kept" ? "✓ kept" : "✕ discarded"}
+                      </span>
+                    ) : (
+                      <em>{node.metric.label}</em>
+                    )}
                     <b>{node.metric.value}</b>
                   </span>
                 ) : (
@@ -205,6 +239,12 @@ export function ProcessGraph() {
               <dt>Status</dt>
               <dd>{STATUS_LABEL[selected.status]}</dd>
             </div>
+            {selected.outcome ? (
+              <div>
+                <dt>Race</dt>
+                <dd>{selected.outcome === "kept" ? "Winner — kept" : "Discarded"}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Methods</dt>
               <dd>{selected.methods.join(" · ")}</dd>
