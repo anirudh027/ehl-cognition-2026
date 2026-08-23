@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M0PWBPPA3VT9B0A2TZN2RQDW",
+  "session_id": "729026da-aad6-4cea-a2e5-487eeb59d633",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-23T08:38:58.377248Z",
+  "branch": "feature/process-graph-mockup",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "frontend/src/ProcessGraph.tsx",
+    "frontend/src/ProcessGraphThumbs.tsx",
+    "frontend/src/process-graph.css",
+    "frontend/src/processGraphArtifacts.ts",
+    "frontend/src/processGraphMock.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "0085b27287af",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 83172,
+    "cache_read_tokens": 1288050,
+    "output_tokens": 19294,
+    "api_call_count": 19
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-23T08:38:58.359726Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 56,
+    "total_committed": 0,
+    "total_lines_changed": 56,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 211,
+      "user_lines_removed": 57,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "frontend/src/ProcessGraph.tsx": 12,
+        "frontend/src/ProcessGraphThumbs.tsx": 59,
+        "frontend/src/process-graph.css": 43,
+        "frontend/src/processGraphArtifacts.ts": 2,
+        "frontend/src/processGraphMock.ts": 94,
+        "frontend/tsconfig.tsbuildinfo": 1
+      },
+      "user_removed_per_file": {
+        "frontend/src/ProcessGraph.tsx": 2,
+        "frontend/src/ProcessGraphThumbs.tsx": 32,
+        "frontend/src/processGraphMock.ts": 22,
+        "frontend/tsconfig.tsbuildinfo": 1
+      }
+    }
+  ]
+}

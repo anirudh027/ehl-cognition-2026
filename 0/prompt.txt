@@ -1,0 +1,27 @@
+do we interact with devin through the apis? also question is can we use devin, to do this multiple agent stuff itself, with some playbook we give to them, and then we use their traces, can we use their traces in this system?
+
+---
+
+no i mean, is there a way devin decides okay i want to have this many parallel agents for this, this many agents for this?
+
+---
+
+when devin decides on run time, is there a possibility to track what everyone of them is doing still?
+
+---
+
+budget is not important but if we go that way, what type of architectural changes will be made, explain all of them like simple bullet poitns
+
+---
+
+can you check our code again, if we wanted to have this structure still with the ui, so everything works, but with this devin managed way, how can we do it, explain
+
+---
+
+but are we planning to doing it the devin's 
+What Devin can do for you
+Orchestrate managed Devins in parallel: Break down a large task and delegate pieces to a team of managed Devin sessions, each running in its own isolated VM
+Analyze session outcomes: Understand why a session succeeded or failed, identify patterns, and extract learnings
+Create and improve playbooks: Turn successful sessions into reusable playbooks, or refine existing ones based on feedback
+Manage knowledge: Deduplicate, consolidate, or create new knowledge entries from your codebase
+Manage schedules: Set up recurring or one-time automated Devin sessions thingies? because we want it to do it
