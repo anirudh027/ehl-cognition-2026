@@ -295,7 +295,7 @@ export function ProcessGraph() {
             return (
               <div
                 key={race.id}
-                className="pg-race"
+                className={`pg-race ${race.live ? "is-live" : ""}`}
                 style={{
                   left: PAD_X + race.col * COL_W - 6,
                   top: top - 8,
@@ -304,6 +304,7 @@ export function ProcessGraph() {
                 }}
               >
                 <span className="pg-race-tag">
+                  {race.live ? <span className="pg-pulse" /> : null}
                   <b>{race.label}</b>
                   <em>{race.rule}</em>
                 </span>
@@ -385,7 +386,7 @@ export function ProcessGraph() {
                   <span className="pg-metric">
                     {node.outcome ? (
                       <span className={`pg-outcome is-${node.outcome}`}>
-                        {node.outcomeLabel ?? (node.outcome === "kept" ? "✓ kept" : "✕ discarded")}
+                        {node.outcomeLabel ?? (node.outcome === "pruned" ? "✕ discarded" : "✓ kept")}
                       </span>
                     ) : (
                       <em>{node.metric.label}</em>
@@ -397,6 +398,15 @@ export function ProcessGraph() {
                     <em>no output</em>
                   </span>
                 )}
+
+                {node.progress != null ? (
+                  <span className="pg-progress" title={`${Math.round(node.progress * 100)}%`}>
+                    <span
+                      className={node.status === "SKIPPED" ? "is-stopped" : ""}
+                      style={{ width: `${Math.round(node.progress * 100)}%` }}
+                    />
+                  </span>
+                ) : null}
 
                 <span className="pg-foot">
                   <span className="pg-foot-left">

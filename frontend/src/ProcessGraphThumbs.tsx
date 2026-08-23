@@ -176,40 +176,67 @@ function ContactThumb() {
   );
 }
 
-/** Backbone RMSD across three replicas, truncated at the live frontier. */
-function MdThumb() {
-  const traces = [12, 44, 91].map((seed, index) => {
-    const next = rng(seed);
-    const cut = index === 2 ? 0.62 : 0.62;
-    const points: string[] = [];
-    let value = 0.2;
-    for (let i = 0; i <= 60; i += 1) {
-      if (i / 60 > cut) break;
-      const plateau = 1.6 + index * 0.25;
-      value += (plateau - value) * 0.09 + (next() - 0.5) * 0.16;
-      const x = (i / 60) * BOX.w;
-      const y = BOX.h - (Math.max(0, value) / 2.6) * (BOX.h - 8) - 4;
-      points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
-    }
-    return { points: points.join(" "), opacity: 0.9 - index * 0.22 };
-  });
-  const frontier = BOX.w * 0.62;
+/** Backbone RMSD for one replica, truncated at its own live frontier.
+ *  Variant 2 is the run that never plateaus and gets killed. */
+function MdThumb({ variant = 0 }: { variant?: number }) {
+  const SPECS = [
+    { seed: 12, cut: 0.62, plateau: 1.8, drift: false },
+    { seed: 44, cut: 0.48, plateau: 2.3, drift: false },
+    { seed: 91, cut: 0.31, plateau: 0, drift: true },
+  ];
+  const spec = SPECS[Math.min(variant, SPECS.length - 1)];
+  const next = rng(spec.seed);
+  const CEILING = 6.4;
+
+  const points: string[] = [];
+  let value = 0.2;
+  for (let i = 0; i <= 60; i += 1) {
+    if (i / 60 > spec.cut) break;
+    // A drifting run keeps climbing; a settling one relaxes toward its plateau.
+    value = spec.drift
+      ? value + 0.42 + (next() - 0.5) * 0.22
+      : value + (spec.plateau - value) * 0.11 + (next() - 0.5) * 0.18;
+    const x = (i / 60) * BOX.w;
+    const y = BOX.h - (Math.max(0, value) / CEILING) * (BOX.h - 10) - 5;
+    points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  const frontier = BOX.w * spec.cut;
+
+  // All three replicas share one scale, and the kill threshold is drawn on
+  // each, so "flat and low" versus "through the line and climbing" is visible
+  // without reading the numbers.
+  const thresholdY = BOX.h - (4.5 / CEILING) * (BOX.h - 10) - 5;
+
   return (
     <Frame>
       <rect width={BOX.w} height={BOX.h} fill="#f4f8f6" />
-      {traces.map((trace) => (
-        <polyline
-          key={trace.points.slice(0, 12)}
-          points={trace.points}
-          fill="none"
-          stroke="#087a68"
-          strokeWidth={1.8}
-          strokeLinejoin="round"
-          opacity={trace.opacity}
-        />
-      ))}
-      <rect x={frontier} y={0} width={BOX.w - frontier} height={BOX.h} fill="#ffffff" opacity={0.55} />
-      <line x1={frontier} y1={0} x2={frontier} y2={BOX.h} stroke="#087a68" strokeWidth={1.5} strokeDasharray="3 3" />
+      <line
+        x1={0}
+        y1={thresholdY}
+        x2={BOX.w}
+        y2={thresholdY}
+        stroke="#b54737"
+        strokeWidth={1}
+        strokeDasharray="4 4"
+        opacity={0.4}
+      />
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke={spec.drift ? "#b54737" : "#087a68"}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <rect x={frontier} y={0} width={BOX.w - frontier} height={BOX.h} fill="#ffffff" opacity={0.6} />
+      <line
+        x1={frontier}
+        y1={0}
+        x2={frontier}
+        y2={BOX.h}
+        stroke={spec.drift ? "#b54737" : "#087a68"}
+        strokeWidth={1.5}
+        strokeDasharray="3 3"
+      />
     </Frame>
   );
 }
@@ -250,7 +277,7 @@ export function Thumb({ kind, variant }: { kind: string; variant?: number }) {
   if (kind === "plddt") return <PlddtThumb />;
   if (kind === "conservation") return <ConservationThumb />;
   if (kind === "contact") return <ContactThumb />;
-  if (kind === "md") return <MdThumb />;
+  if (kind === "md") return <MdThumb variant={variant} />;
   if (kind === "docking") return <DockingThumb />;
   return null;
 }

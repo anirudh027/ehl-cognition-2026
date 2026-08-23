@@ -20,7 +20,7 @@ export type ThumbKind =
   | "none";
 
 /** Result of a race between sibling attempts at the same task. */
-export type RaceOutcome = "kept" | "pruned";
+export type RaceOutcome = "kept" | "pruned" | "leading";
 
 export type GraphNode = {
   id: string;
@@ -51,6 +51,8 @@ export type GraphNode = {
   duration?: string;
   /** Clock time the task reported in, for the chronological log. */
   at?: string;
+  /** Fraction complete, 0–1, for work still in flight. */
+  progress?: number;
   /** Artifact filenames this task wrote. */
   outputs?: string[];
   /** What the agent actually did, in its own words — the execution log,
@@ -78,7 +80,14 @@ export type GraphEdge = { from: string; to: string };
 export type ParallelGroup = { id: string; col: number; label: string };
 
 /** A cluster of competing attempts, drawn as a bracket inside its column. */
-export type RaceGroup = { id: string; col: number; label: string; rule: string };
+export type RaceGroup = {
+  id: string;
+  col: number;
+  label: string;
+  rule: string;
+  /** The race has not resolved yet — no winner has been picked. */
+  live?: boolean;
+};
 
 export const NODES: GraphNode[] = [
   {
@@ -394,30 +403,83 @@ export const NODES: GraphNode[] = [
   },
 
   {
-    id: "md",
+    id: "md-r1",
     col: 5,
-    lane: 0.4,
-    title: "MD stability screen",
+    lane: 0,
+    title: "MD replica 1 · run-1 fold",
     capability: "simulation",
     status: "RUNNING",
     thumb: "md",
-    methods: ["OpenMM", "2 models × 3 × 100 ns"],
-    metric: { label: "progress", value: "62 ns / 100 ns" },
+    thumbVariant: 0,
+    progress: 0.62,
+    methods: ["OpenMM", "100 ns", "seed 1"],
+    metric: { label: "backbone RMSD", value: "1.8 Å, flat" },
     parallelGroup: "fan-2",
+    raceGroup: "md-race",
+    outcome: "leading",
+    outcomeLabel: "leading",
     taskNumber: 12,
     duration: "62m so far",
-    outputs: ["traj_partial.dcd"],
-    log: [
-      "OpenMM, implicit solvent, both surviving folds × 3 replicas × 100 ns.",
-      "Backbone RMSD is flattening near 1.8 Å on the run-1 replicas. Nothing parsed yet — " +
-        "metrics will be reported only once the runs finish.",
-    ],
     at: "08:53",
+    outputs: ["traj_r1.dcd"],
+    log: [
+      "Closed-groove fold, implicit solvent, 100 ns.",
+      "RMSD flattened near 1.8 Å at 40 ns and has held since — provisionally ahead.",
+    ],
+  },
+  {
+    id: "md-r2",
+    col: 5,
+    lane: 1,
+    title: "MD replica 2 · run-2 fold",
+    capability: "simulation",
+    status: "RUNNING",
+    thumb: "md",
+    thumbVariant: 1,
+    progress: 0.48,
+    methods: ["OpenMM", "100 ns", "seed 2"],
+    metric: { label: "backbone RMSD", value: "2.3 Å, settling" },
+    note: "Still in contention — the open groove is holding so far, but it has 52 ns to go.",
+    parallelGroup: "fan-2",
+    raceGroup: "md-race",
+    taskNumber: 13,
+    duration: "48m so far",
+    at: "08:53",
+    outputs: ["traj_r2.dcd"],
+    log: [
+      "Open-groove fold from run 2, same protocol.",
+      "RMSD is higher and still drifting down; too early to call against replica 1.",
+    ],
+  },
+  {
+    id: "md-r3",
+    col: 5,
+    lane: 2,
+    title: "MD replica 3 · run-2 fold",
+    capability: "simulation",
+    status: "SKIPPED",
+    thumb: "md",
+    thumbVariant: 2,
+    progress: 0.31,
+    methods: ["OpenMM", "100 ns", "seed 3"],
+    metric: { label: "RMSD @ kill", value: "5.6 Å, climbing" },
+    note: "Killed at 31 ns — RMSD climbed monotonically past 5 Å with no sign of a plateau, so the fold was coming apart rather than relaxing.",
+    parallelGroup: "fan-2",
+    raceGroup: "md-race",
+    outcome: "pruned",
+    outcomeLabel: "killed · drifting",
+    taskNumber: 14,
+    duration: "31m (killed)",
+    at: "09:24",
+    log: [
+      "Same open-groove fold, seed 3.",
+      "RMSD passed 5 Å at 31 ns still climbing; killed and the GPU returned to the pool.",
+    ],
   },
   {
     id: "docking",
     col: 5,
-    lane: 1.6,
+    lane: 3,
     title: "Docking screen",
     capability: "simulation",
     status: "SKIPPED",
@@ -425,7 +487,7 @@ export const NODES: GraphNode[] = [
     methods: ["AutoDock Vina"],
     note: "Stopped before launch — no curated ligand set for PET oligomers.",
     parallelGroup: "fan-2",
-    taskNumber: 13,
+    taskNumber: 15,
     duration: "—",
     log: [
       "Never launched. PET oligomer ligands would have had to be built by hand, and an " +
@@ -437,7 +499,7 @@ export const NODES: GraphNode[] = [
   {
     id: "panel",
     col: 5,
-    lane: 2.8,
+    lane: 4,
     title: "Mutagenesis panel",
     capability: "design",
     status: "COMPLETED",
@@ -445,7 +507,7 @@ export const NODES: GraphNode[] = [
     methods: ["saturation design"],
     metric: { label: "variants", value: "6 for assay" },
     parallelGroup: "fan-2",
-    taskNumber: 14,
+    taskNumber: 16,
     duration: "2m 05s",
     outputs: ["variants.csv"],
     log: ["6 variants designed across the 9 cross-model sites, sized for a single assay plate."],
@@ -455,14 +517,14 @@ export const NODES: GraphNode[] = [
   {
     id: "synthesis",
     col: 6,
-    lane: 1.6,
+    lane: 1,
     title: "Synthesise findings",
     capability: "synthesis",
     status: "PLANNED",
     thumb: "none",
     methods: ["awaiting MD"],
     note: "Blocked until the stability screen finishes.",
-    taskNumber: 15,
+    taskNumber: 17,
     duration: "queued",
     log: ["Waiting on the stability screen before findings can be written."],
     at: "—",
@@ -486,16 +548,19 @@ export const EDGES: GraphEdge[] = [
   { from: "burial", to: "ranking" },
   { from: "claims", to: "ranking" },
   { from: "conservation", to: "control" },
-  { from: "ranking", to: "md" },
+  { from: "ranking", to: "md-r1" },
+  { from: "ranking", to: "md-r2" },
+  { from: "ranking", to: "md-r3" },
   { from: "ranking", to: "docking" },
   { from: "ranking", to: "panel" },
-  { from: "md", to: "synthesis" },
+  { from: "md-r1", to: "synthesis" },
+  { from: "md-r2", to: "synthesis" },
   { from: "panel", to: "synthesis" },
 ];
 
 export const GROUPS: ParallelGroup[] = [
   { id: "fan-1", col: 2, label: "6 tasks in parallel" },
-  { id: "fan-2", col: 5, label: "3 tasks in parallel" },
+  { id: "fan-2", col: 5, label: "5 tasks in parallel" },
 ];
 
 export const RACES: RaceGroup[] = [
@@ -505,6 +570,13 @@ export const RACES: RaceGroup[] = [
     label: "3 competing runs → 2 kept",
     rule: "kill below pLDDT 70 · keep structurally distinct survivors",
   },
+  {
+    id: "md-race",
+    col: 5,
+    label: "3 replicas in flight",
+    rule: "kill on sustained RMSD climb · report when 2 plateau",
+    live: true,
+  },
 ];
 
 /** Header metadata, mirroring the run summary the operator sees elsewhere. */
@@ -512,8 +584,8 @@ export const META = {
   protocol: "End-to-end laboratory investigation (default)",
   state: "Working in the sandbox…",
   elapsed: "97m 42s",
-  taskCount: 15,
-  outputCount: 12,
+  taskCount: 17,
+  outputCount: 13,
   updated: "23 Aug, 09:58",
   capabilities: [
     "Literature Search",

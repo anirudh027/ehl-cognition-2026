@@ -994,3 +994,46 @@ button.pg-file em {
   line-height: 1.5 !important;
   color: var(--pg-muted) !important;
 }
+
+/* ---------- in-flight progress ---------- */
+
+.pg-progress {
+  display: block;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--pg-line);
+  overflow: hidden;
+}
+
+.pg-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--pg-accent);
+}
+
+.pg-progress > span.is-stopped { background: var(--pg-warn); }
+
+/* A race still in flight has no winner yet, so it must not read as settled. */
+.pg-race.is-live {
+  border-style: dashed;
+  border-color: var(--pg-accent);
+}
+
+.pg-race.is-live .pg-race-tag {
+  background: var(--pg-accent);
+}
+
+.pg-race-tag .pg-pulse {
+  background: #fff;
+  width: 5px;
+  height: 5px;
+}
+
+.pg-outcome.is-leading { color: var(--pg-accent-strong); }
+
+.pg-node.outcome-leading {
+  border-left-color: var(--pg-accent);
+  box-shadow: 0 0 0 1.5px rgba(8, 122, 104, 0.2), 0 6px 18px rgba(20, 46, 38, 0.06);
+}

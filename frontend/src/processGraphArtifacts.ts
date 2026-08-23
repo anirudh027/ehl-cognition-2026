@@ -198,5 +198,7 @@ export const ARTIFACTS: Record<string, Artifact> = {
 
   "fold_run1.pdb": { kind: "text", bytes: "156 KB", summary: "PDB coordinates, 1951 ATOM records, chain A. Rendered in the structure view above." },
   "fold_run2.pdb": { kind: "text", bytes: "156 KB", summary: "PDB coordinates for the alternate open-groove model." },
+  "traj_r1.dcd": { kind: "binary", bytes: "890 MB", summary: "Binary MD trajectory, still being written. 62 ns of 100 ns." },
+  "traj_r2.dcd": { kind: "binary", bytes: "690 MB", summary: "Binary MD trajectory, still being written. 48 ns of 100 ns." },
   "traj_partial.dcd": { kind: "binary", bytes: "1.4 GB", summary: "Binary MD trajectory, still being written. 62 ns of 100 ns." },
 };
