@@ -1,0 +1,9 @@
+do we interact with devin through the apis? also question is can we use devin, to do this multiple agent stuff itself, with some playbook we give to them, and then we use their traces, can we use their traces in this system?
+
+---
+
+no i mean, is there a way devin decides okay i want to have this many parallel agents for this, this many agents for this?
+
+---
+
+when devin decides on run time, is there a possibility to track what everyone of them is doing still?
