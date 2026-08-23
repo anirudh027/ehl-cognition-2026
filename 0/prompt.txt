@@ -1,0 +1,1 @@
+I was wondering, can we have multiple predict structure runs at once, so that we can test multiple of them at once, if one end early we say we get rid of that one etc? can you make it like that
