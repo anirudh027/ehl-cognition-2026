@@ -206,7 +206,7 @@ export function ProcessGraph() {
                   <span className="pg-metric">
                     {node.outcome ? (
                       <span className={`pg-outcome is-${node.outcome}`}>
-                        {node.outcome === "kept" ? "✓ kept" : "✕ discarded"}
+                        {node.outcomeLabel ?? (node.outcome === "kept" ? "✓ kept" : "✕ discarded")}
                       </span>
                     ) : (
                       <em>{node.metric.label}</em>
@@ -242,7 +242,7 @@ export function ProcessGraph() {
             {selected.outcome ? (
               <div>
                 <dt>Race</dt>
-                <dd>{selected.outcome === "kept" ? "Winner — kept" : "Discarded"}</dd>
+                <dd>{selected.outcomeLabel ?? (selected.outcome === "kept" ? "Kept" : "Discarded")}</dd>
               </div>
             ) : null}
             <div>

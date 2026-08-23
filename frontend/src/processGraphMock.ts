@@ -43,6 +43,8 @@ export type GraphNode = {
   /** Several attempts at the SAME task, competing; only the winner is kept. */
   raceGroup?: string;
   outcome?: RaceOutcome;
+  /** Overrides the default chip text, e.g. to mark primary vs alternate. */
+  outcomeLabel?: string;
 };
 
 export type GraphEdge = { from: string; to: string };
@@ -104,6 +106,7 @@ export const NODES: GraphNode[] = [
     parallelGroup: "fan-1",
     raceGroup: "fold-race",
     outcome: "kept",
+    outcomeLabel: "kept · primary",
   },
   {
     id: "fold-b",
@@ -116,10 +119,14 @@ export const NODES: GraphNode[] = [
     thumbVariant: 1,
     methods: ["AlphaFold2", "seed 2", "shallow MSA"],
     metric: { label: "mean pLDDT", value: "74.2" },
-    note: "Finished, but 17.2 pLDDT below run 1 — discarded after the race.",
+    note:
+      "Lower confidence than run 1, but the subsampled MSA settled on an open " +
+      "substrate groove — TM-score 0.71 to run 1, so it is a distinct hypothesis " +
+      "rather than a worse copy of the same fold. Carried forward.",
     parallelGroup: "fan-1",
     raceGroup: "fold-race",
-    outcome: "pruned",
+    outcome: "kept",
+    outcomeLabel: "kept · alternate",
   },
   {
     id: "fold-c",
@@ -132,7 +139,10 @@ export const NODES: GraphNode[] = [
     thumbVariant: 2,
     methods: ["ESMFold", "single sequence"],
     metric: { label: "pLDDT @ stop", value: "58.9" },
-    note: "Killed at 41% — pLDDT plateaued under the 70 floor, so compute was released to run 1.",
+    note:
+      "Killed at 41% — pLDDT plateaued under the 70 floor. Single-sequence input " +
+      "on a target with a deep MSA available, so it was the least-informed run; " +
+      "compute was released to the survivors.",
     parallelGroup: "fan-1",
     raceGroup: "fold-race",
     outcome: "pruned",
@@ -183,9 +193,11 @@ export const NODES: GraphNode[] = [
     capability: "structure",
     status: "COMPLETED",
     thumb: "plddt",
-    methods: ["DSSP", "per-residue RSA"],
-    metric: { label: "buried", value: "141 residues" },
-    note: "Runs on the winning fold only.",
+    methods: ["DSSP", "per-residue RSA", "2 models"],
+    metric: { label: "buried in both", value: "141 residues" },
+    note:
+      "Scored across both surviving folds. 141 residues are buried in both; " +
+      "9 flip exposure between them, all in the groove loop that run 2 opens.",
   },
   {
     id: "claims",
@@ -207,8 +219,12 @@ export const NODES: GraphNode[] = [
     capability: "design",
     status: "COMPLETED",
     thumb: "contact",
-    methods: ["consensus scoring"],
+    methods: ["consensus scoring", "cross-model"],
     metric: { label: "shortlist", value: "12 sites" },
+    note:
+      "9 of 12 sites rank consistently across both folds. The other 3 only " +
+      "appear in the run-2 open state — flagged as conformation-dependent " +
+      "rather than dropped.",
   },
   {
     id: "control",
@@ -231,7 +247,7 @@ export const NODES: GraphNode[] = [
     capability: "simulation",
     status: "RUNNING",
     thumb: "md",
-    methods: ["OpenMM", "3 × 100 ns"],
+    methods: ["OpenMM", "2 models × 3 × 100 ns"],
     metric: { label: "progress", value: "62 ns / 100 ns" },
     parallelGroup: "fan-2",
   },
@@ -282,8 +298,9 @@ export const EDGES: GraphEdge[] = [
   { from: "plan", to: "literature" },
   { from: "plan", to: "foldseek" },
   { from: "homologs", to: "conservation" },
-  // only the surviving fold feeds downstream work
+  // both surviving folds feed downstream work as competing hypotheses
   { from: "fold-a", to: "burial" },
+  { from: "fold-b", to: "burial" },
   { from: "literature", to: "claims" },
   { from: "conservation", to: "ranking" },
   { from: "burial", to: "ranking" },
@@ -305,7 +322,7 @@ export const RACES: RaceGroup[] = [
   {
     id: "fold-race",
     col: 2,
-    label: "3 competing runs",
-    rule: "keep highest pLDDT · kill below 70",
+    label: "3 competing runs → 2 kept",
+    rule: "kill below pLDDT 70 · keep structurally distinct survivors",
   },
 ];
