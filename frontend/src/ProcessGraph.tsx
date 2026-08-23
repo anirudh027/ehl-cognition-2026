@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { EDGES, GROUPS, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
+import { StructureViewer } from "./StructureViewer";
 import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
 
@@ -113,6 +114,38 @@ export function ProcessGraph() {
   const height = PAD_Y * 2 + maxLane * ROW_H + NODE_H + 26;
 
   const selected = selectedId ? byId.get(selectedId) : null;
+
+  // PDB text is fetched once per file and cached, so re-selecting a
+  // structure node does not refetch or restart the viewer needlessly.
+  const [pdbText, setPdbText] = useState<string | null>(null);
+  const pdbCache = useRef(new Map<string, string>());
+  const structureFile = selected?.structure?.file ?? null;
+
+  useEffect(() => {
+    if (!structureFile) {
+      setPdbText(null);
+      return;
+    }
+    const cached = pdbCache.current.get(structureFile);
+    if (cached) {
+      setPdbText(cached);
+      return;
+    }
+    let cancelled = false;
+    setPdbText(null);
+    void fetch(structureFile)
+      .then((response) => (response.ok ? response.text() : Promise.reject(new Error(String(response.status)))))
+      .then((text) => {
+        pdbCache.current.set(structureFile, text);
+        if (!cancelled) setPdbText(text);
+      })
+      .catch(() => {
+        if (!cancelled) setPdbText(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [structureFile]);
 
   const fitToView = useCallback(() => {
     const el = scrollRef.current;
@@ -369,6 +402,28 @@ export function ProcessGraph() {
           </header>
 
           <div className="pg-dock-scroll">
+            {selected.structure ? (
+              <section className="pg-structure">
+                <h4>Structure</h4>
+                <div className="pg-viewer-host">
+                  {pdbText ? (
+                    <StructureViewer
+                      key={`${selected.id}-${selected.structure.file}`}
+                      pdbText={pdbText}
+                      triad={selected.structure.triad}
+                      activity={selected.structure.activity}
+                      stability={selected.structure.stability}
+                      focus={selected.structure.focus}
+                      overview={selected.structure.overview}
+                    />
+                  ) : (
+                    <p className="pg-viewer-loading">Loading structure…</p>
+                  )}
+                </div>
+                <p className="pg-viewer-caption">{selected.structure.caption}</p>
+              </section>
+            ) : null}
+
             {selected.log?.length ? (
               <section>
                 <h4>What ran</h4>

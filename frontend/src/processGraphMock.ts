@@ -58,6 +58,17 @@ export type GraphNode = {
   counterEvidence?: string;
   /** Caveats this task attaches to anything downstream of it. */
   limitations?: string[];
+  /** A real structure to render, rotating, in the detail dock. */
+  structure?: {
+    file: string;
+    caption: string;
+    triad: number[];
+    activity: number[];
+    stability: number[];
+    focus: number | null;
+    /** Frame the whole chain instead of zooming to one residue. */
+    overview?: boolean;
+  };
 };
 
 export type GraphEdge = { from: string; to: string };
@@ -135,6 +146,18 @@ export const NODES: GraphNode[] = [
       "Best model mean pLDDT 91.4; the catalytic triad region scores 94.8, " +
         "so confidence is high exactly where the question is.",
     ],
+    structure: {
+      file: "/structures/5XJH_A.pdb",
+      caption:
+        "PETase from Ideonella sakaiensis (PDB 5XJH, chain A). Red is the " +
+        "Ser160–Asp206–His237 catalytic triad, teal the activity hotspots, " +
+        "blue the stability set.",
+      triad: [160, 206, 237],
+      activity: [159, 238],
+      stability: [121, 186, 280],
+      focus: null,
+      overview: true,
+    },
   },
   {
     id: "fold-b",
@@ -172,6 +195,16 @@ export const NODES: GraphNode[] = [
       "No experimental structure supports the open state.",
       "Anything ranked only in this conformation inherits its uncertainty.",
     ],
+    structure: {
+      file: "/structures/5XJH_A.pdb",
+      caption:
+        "Same chain, framed on the substrate groove that run 2 predicts open. " +
+        "Compare the W159/S238 pocket against run 1.",
+      triad: [160, 206, 237],
+      activity: [159, 238],
+      stability: [121, 186, 280],
+      focus: 159,
+    },
   },
   {
     id: "fold-c",
@@ -314,6 +347,15 @@ export const NODES: GraphNode[] = [
       "conformation-dependent sites are scored by a rule that assumes the groove is " +
       "shut. Their ranking is not independent of which fold you trust.",
     limitations: ["No experimental activity data enters the score — this is prediction only."],
+    structure: {
+      file: "/structures/5XJH_A.pdb",
+      caption: "The 12 shortlisted sites mapped back onto the fold.",
+      triad: [160, 206, 237],
+      activity: [159, 238, 241],
+      stability: [121, 186, 280, 214],
+      focus: null,
+      overview: true,
+    },
   },
   {
     id: "control",
