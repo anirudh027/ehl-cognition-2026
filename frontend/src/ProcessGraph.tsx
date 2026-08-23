@@ -4,9 +4,9 @@ import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
 
 const COL_W = 292;
-const ROW_H = 186;
+const ROW_H = 202;
 const NODE_W = 232;
-const NODE_H = 158;
+const NODE_H = 176;
 const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 1.8;
 const PAD_X = 36;
@@ -153,6 +153,7 @@ export function ProcessGraph() {
         </div>
       </header>
 
+      <div className="pg-main">
       <div
         className={`pg-scroll ${panning ? "is-panning" : ""}`}
         ref={scrollRef}
@@ -275,7 +276,10 @@ export function ProcessGraph() {
                 aria-pressed={node.id === selectedId}
               >
                 <span className="pg-node-top">
-                  <span className="pg-cap">{node.capability}</span>
+                  <span className="pg-cap">
+                    {node.taskNumber ? <b className="pg-num">{node.taskNumber}</b> : null}
+                    {node.capability}
+                  </span>
                   <span className="pg-status">
                     {node.status === "RUNNING" ? <span className="pg-pulse" /> : null}
                     {STATUS_LABEL[node.status]}
@@ -320,6 +324,22 @@ export function ProcessGraph() {
                     <em>no output</em>
                   </span>
                 )}
+
+                <span className="pg-foot">
+                  <span className="pg-foot-left">
+                    {node.outputs?.length ? (
+                      <span className="pg-outputs" title={node.outputs.join(", ")}>
+                        ◆ {node.outputs.length}
+                      </span>
+                    ) : null}
+                    {node.counterEvidence ? (
+                      <span className="pg-counter-flag" title="Counter-evidence recorded">
+                        ⚑ counter-evidence
+                      </span>
+                    ) : null}
+                  </span>
+                  {node.duration ? <span className="pg-dur">{node.duration}</span> : null}
+                </span>
               </button>
             );
           })}
@@ -328,40 +348,88 @@ export function ProcessGraph() {
       </div>
 
       {!selected ? (
-        <aside className="pg-inspect pg-inspect-idle">
-          <p>Select any task to trace its lineage through the graph.</p>
+        <aside className="pg-dock pg-dock-idle">
+          <p>Select a task to read what it did, what it produced, and what argues against it.</p>
         </aside>
       ) : (
-        <aside className="pg-inspect">
-          <div>
-            <p className="pg-eyebrow">{selected.capability}</p>
+        <aside className="pg-dock">
+          <header className="pg-dock-head">
+            <p className="pg-eyebrow">
+              {selected.taskNumber ? `Task ${selected.taskNumber} · ` : ""}
+              {selected.capability}
+            </p>
             <h3>{selected.title}</h3>
+            <div className="pg-dock-meta">
+              <span className={`pg-status status-chip-${selected.status.toLowerCase()}`}>
+                {STATUS_LABEL[selected.status]}
+              </span>
+              {selected.outcomeLabel ? <span className="pg-dock-outcome">{selected.outcomeLabel}</span> : null}
+              {selected.duration ? <span className="pg-dur">{selected.duration}</span> : null}
+            </div>
+          </header>
+
+          <div className="pg-dock-scroll">
+            {selected.log?.length ? (
+              <section>
+                <h4>What ran</h4>
+                {selected.log.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </section>
+            ) : null}
+
+            {selected.note ? (
+              <section>
+                <h4>Why it went this way</h4>
+                <p>{selected.note}</p>
+              </section>
+            ) : null}
+
+            {selected.counterEvidence ? (
+              <section className="pg-counter">
+                <h4>⚑ Counter-evidence</h4>
+                <p>{selected.counterEvidence}</p>
+              </section>
+            ) : null}
+
+            {selected.outputs?.length ? (
+              <section>
+                <h4>Outputs</h4>
+                <div className="pg-chips">
+                  {selected.outputs.map((file) => (
+                    <span key={file} className="pg-file">
+                      {file}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section>
+              <h4>Methods</h4>
+              <div className="pg-chips">
+                {selected.methods.map((method) => (
+                  <span key={method} className="pg-chip">
+                    {method}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            {selected.limitations?.length ? (
+              <section>
+                <h4>Limitations carried downstream</h4>
+                <ul className="pg-lims">
+                  {selected.limitations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
-          <dl>
-            <div>
-              <dt>Status</dt>
-              <dd>{STATUS_LABEL[selected.status]}</dd>
-            </div>
-            {selected.outcome ? (
-              <div>
-                <dt>Race</dt>
-                <dd>{selected.outcomeLabel ?? (selected.outcome === "kept" ? "Kept" : "Discarded")}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt>Methods</dt>
-              <dd>{selected.methods.join(" · ")}</dd>
-            </div>
-            {selected.metric ? (
-              <div>
-                <dt>{selected.metric.label}</dt>
-                <dd>{selected.metric.value}</dd>
-              </div>
-            ) : null}
-          </dl>
-          {selected.note ? <p className="pg-inspect-note">{selected.note}</p> : null}
         </aside>
       )}
+      </div>
     </section>
   );
 }

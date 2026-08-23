@@ -45,6 +45,19 @@ export type GraphNode = {
   outcome?: RaceOutcome;
   /** Overrides the default chip text, e.g. to mark primary vs alternate. */
   outcomeLabel?: string;
+  /** Position in the flat task list the operator sees elsewhere. */
+  taskNumber?: number;
+  /** Wall-clock the task consumed, or has consumed so far. */
+  duration?: string;
+  /** Artifact filenames this task wrote. */
+  outputs?: string[];
+  /** What the agent actually did, in its own words — the execution log,
+   *  split per task rather than one global scroll. */
+  log?: string[];
+  /** Disconfirming evidence deliberately kept in view. */
+  counterEvidence?: string;
+  /** Caveats this task attaches to anything downstream of it. */
+  limitations?: string[];
 };
 
 export type GraphEdge = { from: string; to: string };
@@ -89,6 +102,13 @@ export const NODES: GraphNode[] = [
     methods: ["jackhmmer", "UniRef90"],
     metric: { label: "hits", value: "412 @ e<1e-5" },
     parallelGroup: "fan-1",
+    taskNumber: 1,
+    duration: "6m 12s",
+    outputs: ["homolog_search.json"],
+    log: [
+      "jackhmmer against UniRef90, 3 iterations, gathering to e<1e-5.",
+      "412 hits retained after removing fragments under 60% coverage.",
+    ],
   },
 
   // --- three competing structure predictions -------------------------------
@@ -107,6 +127,14 @@ export const NODES: GraphNode[] = [
     raceGroup: "fold-race",
     outcome: "kept",
     outcomeLabel: "kept · primary",
+    taskNumber: 2,
+    duration: "41m 08s",
+    outputs: ["fold_run1.pdb", "plddt_run1.json"],
+    log: [
+      "AlphaFold2 with the full 412-sequence MSA, 5 models, seed 1.",
+      "Best model mean pLDDT 91.4; the catalytic triad region scores 94.8, " +
+        "so confidence is high exactly where the question is.",
+    ],
   },
   {
     id: "fold-b",
@@ -127,6 +155,23 @@ export const NODES: GraphNode[] = [
     raceGroup: "fold-race",
     outcome: "kept",
     outcomeLabel: "kept · alternate",
+    taskNumber: 3,
+    duration: "38m 55s",
+    outputs: ["fold_run2.pdb"],
+    log: [
+      "AlphaFold2 with the MSA subsampled to 32 sequences, seed 2 — run " +
+        "deliberately to sample alternative conformations rather than to beat run 1.",
+      "Converged on an open substrate groove; TM-score 0.71 against run 1.",
+    ],
+    counterEvidence:
+      "TM-score 0.71 sits above the 0.5 fold-identity line, so this is the same " +
+      "fold in a different state — but shallow-MSA sampling is known to produce " +
+      "plausible-looking states that are artefacts. The open groove is a hypothesis, " +
+      "not an observation.",
+    limitations: [
+      "No experimental structure supports the open state.",
+      "Anything ranked only in this conformation inherits its uncertainty.",
+    ],
   },
   {
     id: "fold-c",
@@ -146,6 +191,13 @@ export const NODES: GraphNode[] = [
     parallelGroup: "fan-1",
     raceGroup: "fold-race",
     outcome: "pruned",
+    taskNumber: 4,
+    duration: "12m 30s (killed)",
+    log: [
+      "ESMFold, single sequence, no MSA.",
+      "pLDDT plateaued at 58.9 by residue 190 and stopped climbing; killed at 41% " +
+        "and the GPU was handed back to run 1.",
+    ],
   },
   // -------------------------------------------------------------------------
 
@@ -160,6 +212,10 @@ export const NODES: GraphNode[] = [
     methods: ["PubMed", "EuropePMC"],
     metric: { label: "papers", value: "38 screened" },
     parallelGroup: "fan-1",
+    taskNumber: 5,
+    duration: "4m 02s",
+    outputs: ["literature.json"],
+    log: ["PubMed and EuropePMC, 2019 onward; 38 abstracts screened, 12 read in full."],
   },
   {
     id: "foldseek",
@@ -172,6 +228,9 @@ export const NODES: GraphNode[] = [
     methods: ["Foldseek", "PDB100"],
     note: "Upstream API returned 503 after 3 retries — branch abandoned.",
     parallelGroup: "fan-1",
+    taskNumber: 6,
+    duration: "0m 38s",
+    log: ["Three attempts against the Foldseek web API, all 503. Branch abandoned."],
   },
 
   {
@@ -184,6 +243,13 @@ export const NODES: GraphNode[] = [
     thumb: "conservation",
     methods: ["MAFFT", "Shannon entropy"],
     metric: { label: "informative", value: "268 columns" },
+    taskNumber: 7,
+    duration: "3m 44s",
+    outputs: ["alignment.json", "conservation.json"],
+    log: [
+      "MAFFT L-INS-i over the 412 homologs, Shannon entropy per column.",
+      "268 columns informative; the four lowest-entropy positions sit in the groove.",
+    ],
   },
   {
     id: "burial",
@@ -198,6 +264,13 @@ export const NODES: GraphNode[] = [
     note:
       "Scored across both surviving folds. 141 residues are buried in both; " +
       "9 flip exposure between them, all in the groove loop that run 2 opens.",
+    taskNumber: 8,
+    duration: "2m 19s",
+    outputs: ["residue_annotations.json"],
+    log: [
+      "DSSP secondary structure and per-residue RSA, scored across both surviving folds.",
+      "141 residues buried in both. 9 flip exposure between them — all in the groove loop.",
+    ],
   },
   {
     id: "claims",
@@ -209,6 +282,10 @@ export const NODES: GraphNode[] = [
     thumb: "none",
     methods: ["claim mining"],
     metric: { label: "claims", value: "17 with DOI" },
+    taskNumber: 9,
+    duration: "5m 51s",
+    outputs: ["claims.json"],
+    log: ["17 claims extracted with DOIs; 5 concern thermostability directly."],
   },
 
   {
@@ -225,6 +302,18 @@ export const NODES: GraphNode[] = [
       "9 of 12 sites rank consistently across both folds. The other 3 only " +
       "appear in the run-2 open state — flagged as conformation-dependent " +
       "rather than dropped.",
+    taskNumber: 10,
+    duration: "1m 48s",
+    outputs: ["candidate_sites.json"],
+    log: [
+      "Consensus scoring over conservation, burial and prior claims, run against both folds.",
+      "9 of 12 sites rank consistently. 3 appear only in the run-2 open state.",
+    ],
+    counterEvidence:
+      "The consensus weighting was tuned on the run-1 closed state, so the 3 " +
+      "conformation-dependent sites are scored by a rule that assumes the groove is " +
+      "shut. Their ranking is not independent of which fold you trust.",
+    limitations: ["No experimental activity data enters the score — this is prediction only."],
   },
   {
     id: "control",
@@ -237,6 +326,14 @@ export const NODES: GraphNode[] = [
     methods: ["negative control", "n=200"],
     metric: { label: "signal", value: "0.04 vs 0.61" },
     test: { label: "control passed", passed: true },
+    taskNumber: 11,
+    duration: "7m 26s",
+    outputs: ["control_null.json"],
+    log: [
+      "Column-shuffled MSA, 200 replicates, same scoring path as the real run.",
+      "Null signal 0.04 against 0.61 observed — the conservation signal is not an artefact " +
+        "of the scoring pipeline.",
+    ],
   },
 
   {
@@ -250,6 +347,14 @@ export const NODES: GraphNode[] = [
     methods: ["OpenMM", "2 models × 3 × 100 ns"],
     metric: { label: "progress", value: "62 ns / 100 ns" },
     parallelGroup: "fan-2",
+    taskNumber: 12,
+    duration: "62m so far",
+    outputs: ["traj_partial.dcd"],
+    log: [
+      "OpenMM, implicit solvent, both surviving folds × 3 replicas × 100 ns.",
+      "Backbone RMSD is flattening near 1.8 Å on the run-1 replicas. Nothing parsed yet — " +
+        "metrics will be reported only once the runs finish.",
+    ],
   },
   {
     id: "docking",
@@ -262,6 +367,13 @@ export const NODES: GraphNode[] = [
     methods: ["AutoDock Vina"],
     note: "Stopped before launch — no curated ligand set for PET oligomers.",
     parallelGroup: "fan-2",
+    taskNumber: 13,
+    duration: "—",
+    log: [
+      "Never launched. PET oligomer ligands would have had to be built by hand, and an " +
+        "uncurated set would produce scores that look quantitative but are not.",
+    ],
+    limitations: ["No binding-affinity evidence anywhere in this investigation."],
   },
   {
     id: "panel",
@@ -274,6 +386,10 @@ export const NODES: GraphNode[] = [
     methods: ["saturation design"],
     metric: { label: "variants", value: "6 for assay" },
     parallelGroup: "fan-2",
+    taskNumber: 14,
+    duration: "2m 05s",
+    outputs: ["variants.csv"],
+    log: ["6 variants designed across the 9 cross-model sites, sized for a single assay plate."],
   },
 
   {
@@ -286,6 +402,9 @@ export const NODES: GraphNode[] = [
     thumb: "none",
     methods: ["awaiting MD"],
     note: "Blocked until the stability screen finishes.",
+    taskNumber: 15,
+    duration: "queued",
+    log: ["Waiting on the stability screen before findings can be written."],
   },
 ];
 
