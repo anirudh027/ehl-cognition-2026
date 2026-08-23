@@ -1,0 +1,17 @@
+can you check all the updates on the repo and pull them here to the main
+
+---
+
+cany ou create another branch now, and see if we can visualize this process, like in a sideways, graph like manner that looks nice, you can first create how it looks like before connecting to anything. What I have in my mind is making this thought process look like, did parallelly run these ones, tested this one, stopped this one, and for the ones where they try to use alphafold etc if there is visual input, in the boxes of the nodes of this graph we have a smaller image of them.
+
+---
+
+okay try it
+
+---
+
+okay also we want this git@github.com:SAint7579/ehl-cognition-2026.git to be our main repo for git, can you make it the other origin, and first get the latest version of this
+
+---
+
+sorry you can continue, we don't want to continue to https://github.com/SAint7579/ehl-cognition-2026 we continue from the prvious process before, so lets go on with anirudh one
