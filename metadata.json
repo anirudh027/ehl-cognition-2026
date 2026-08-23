@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M0PY30XQ5EMBER99QC42WF1F",
+  "strategy": "manual-commit",
+  "branch": "feature/process-graph-mockup",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "frontend/src/main.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 88,
+    "cache_creation_tokens": 39979,
+    "cache_read_tokens": 12210359,
+    "output_tokens": 16627,
+    "api_call_count": 44
+  }
+}

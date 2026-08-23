@@ -1,0 +1,17 @@
+okay lets leave the devin capability here commit and leave in this branch, go back to the dashboard thingy, and see if there is any push to main, related to chat recovered, and then finalize our dashboard
+
+---
+
+can we go to that branch, get the data from the main, and see how its displayed in this version
+
+---
+
+wait not this one, we had this cool looking dashboard, created in this session, which branch was it
+
+---
+
+if we get the stuff, i want to see the dashboard, before pushing or opening a pr
+
+---
+
+is it pushable to main, i want to have a pr for it if so
