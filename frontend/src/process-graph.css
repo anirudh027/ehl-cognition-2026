@@ -80,10 +80,25 @@
   min-height: 0;
   overflow: auto;
   padding: 4px 0 12px;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+
+.pg-scroll.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.pg-stage {
+  position: relative;
+  /* Sized to the scaled diagram so the scrollbars stay honest. */
 }
 
 .pg-canvas {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
 }
 
 .pg-col-label {
@@ -416,4 +431,46 @@
   /* Keep enough colour that the low pLDDT palette still explains the loss. */
   filter: grayscale(0.3);
   opacity: 0.72;
+}
+
+/* ---------- zoom controls ---------- */
+
+.pg-zoom {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid var(--pg-line-strong);
+  border-radius: 8px;
+  background: var(--pg-line);
+  overflow: hidden;
+}
+
+.pg-zoom button {
+  min-width: 30px;
+  padding: 4px 8px;
+  border: 0;
+  background: var(--pg-panel);
+  color: var(--pg-ink);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.pg-zoom button:hover:not(:disabled) { background: var(--pg-accent-soft); }
+
+.pg-zoom button:disabled {
+  color: var(--pg-faint);
+  cursor: default;
+}
+
+.pg-zoom-level {
+  min-width: 52px !important;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px !important;
+  color: var(--pg-muted) !important;
+}
+
+.pg-zoom-fit {
+  font-size: 12px !important;
+  color: var(--pg-muted) !important;
 }

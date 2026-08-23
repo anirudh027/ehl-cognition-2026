@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { EDGES, GROUPS, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
 import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
@@ -7,6 +7,8 @@ const COL_W = 292;
 const ROW_H = 186;
 const NODE_W = 232;
 const NODE_H = 158;
+const ZOOM_MIN = 0.35;
+const ZOOM_MAX = 1.8;
 const PAD_X = 36;
 const PAD_Y = 70;
 
@@ -34,6 +36,55 @@ const COLUMN_LABELS = [
 
 export function ProcessGraph() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [panning, setPanning] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(1);
+  // Point of the diagram to hold still while the scale changes.
+  const anchorRef = useRef<{ cx: number; cy: number; ax: number; ay: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
+
+  const applyZoom = useCallback((next: number, clientX?: number, clientY?: number) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+    const el = scrollRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const ax = clientX == null ? el.clientWidth / 2 : clientX - rect.left;
+      const ay = clientY == null ? el.clientHeight / 2 : clientY - rect.top;
+      anchorRef.current = {
+        cx: (el.scrollLeft + ax) / zoomRef.current,
+        cy: (el.scrollTop + ay) / zoomRef.current,
+        ax,
+        ay,
+      };
+    }
+    setZoom(clamped);
+  }, []);
+
+  // Restore the anchor point after the browser has laid out the new scale.
+  useLayoutEffect(() => {
+    zoomRef.current = zoom;
+    const el = scrollRef.current;
+    const anchor = anchorRef.current;
+    if (!el || !anchor) return;
+    el.scrollLeft = anchor.cx * zoom - anchor.ax;
+    el.scrollTop = anchor.cy * zoom - anchor.ay;
+    anchorRef.current = null;
+  }, [zoom]);
+
+  // Trackpad pinch and ctrl/cmd + wheel zoom; a plain wheel still scrolls.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      applyZoom(zoomRef.current * (1 - event.deltaY * 0.0018), event.clientX, event.clientY);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [applyZoom]);
+
 
   const byId = useMemo(() => new Map(NODES.map((node) => [node.id, node])), []);
 
@@ -63,6 +114,14 @@ export function ProcessGraph() {
 
   const selected = selectedId ? byId.get(selectedId) : null;
 
+  const fitToView = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scale = Math.min((el.clientWidth - 24) / width, (el.clientHeight - 24) / height, 1);
+    anchorRef.current = { cx: 0, cy: 0, ax: 0, ay: 0 };
+    setZoom(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, scale)));
+  }, [height, width]);
+
   return (
     <section className="pg" aria-label="Investigation process graph">
       <header className="pg-head">
@@ -78,10 +137,53 @@ export function ProcessGraph() {
             </li>
           ))}
         </ul>
+        <div className="pg-zoom">
+          <button type="button" onClick={() => applyZoom(zoom - 0.15)} aria-label="Zoom out" disabled={zoom <= ZOOM_MIN}>
+            −
+          </button>
+          <button type="button" className="pg-zoom-level" onClick={() => applyZoom(1)} title="Reset to 100%">
+            {Math.round(zoom * 100)}%
+          </button>
+          <button type="button" onClick={() => applyZoom(zoom + 0.15)} aria-label="Zoom in" disabled={zoom >= ZOOM_MAX}>
+            +
+          </button>
+          <button type="button" className="pg-zoom-fit" onClick={fitToView}>
+            Fit
+          </button>
+        </div>
       </header>
 
-      <div className="pg-scroll">
-        <div className="pg-canvas" style={{ width, height }}>
+      <div
+        className={`pg-scroll ${panning ? "is-panning" : ""}`}
+        ref={scrollRef}
+        onPointerDown={(event) => {
+          // Dragging the background pans; dragging a card must still click it.
+          if ((event.target as HTMLElement).closest(".pg-node")) return;
+          const el = scrollRef.current;
+          if (!el) return;
+          panRef.current = { x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
+          setPanning(true);
+          el.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          const pan = panRef.current;
+          const el = scrollRef.current;
+          if (!pan || !el) return;
+          el.scrollLeft = pan.sl - (event.clientX - pan.x);
+          el.scrollTop = pan.st - (event.clientY - pan.y);
+        }}
+        onPointerUp={(event) => {
+          panRef.current = null;
+          setPanning(false);
+          scrollRef.current?.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => {
+          panRef.current = null;
+          setPanning(false);
+        }}
+      >
+        <div className="pg-stage" style={{ width: width * zoom, height: height * zoom }}>
+        <div className="pg-canvas" style={{ width, height, transform: `scale(${zoom})` }}>
           <div className="pg-columns" aria-hidden>
             {COLUMN_LABELS.map((label, col) => (
               <span key={label} className="pg-col-label" style={{ left: PAD_X + col * COL_W, width: NODE_W }}>
@@ -221,6 +323,7 @@ export function ProcessGraph() {
               </button>
             );
           })}
+        </div>
         </div>
       </div>
 
