@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BRIEF, EDGES, GROUPS, META, NODES, RACES, type GraphNode, type MockStatus } from "./processGraphMock";
+import { ARTIFACTS } from "./processGraphArtifacts";
 import { StructureViewer } from "./StructureViewer";
 import { Thumb } from "./ProcessGraphThumbs";
 import "./process-graph.css";
@@ -40,6 +41,7 @@ export function ProcessGraph() {
   const [zoom, setZoom] = useState(1);
   const [panelTab, setPanelTab] = useState<"log" | "brief" | "limits">("log");
   const [panelOpen, setPanelOpen] = useState(true);
+  const [openFile, setOpenFile] = useState<string | null>(null);
   const [panning, setPanning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(1);
@@ -142,6 +144,10 @@ export function ProcessGraph() {
   const [pdbText, setPdbText] = useState<string | null>(null);
   const pdbCache = useRef(new Map<string, string>());
   const structureFile = selected?.structure?.file ?? null;
+
+  useEffect(() => {
+    setOpenFile(null);
+  }, [selectedId]);
 
   useEffect(() => {
     if (!structureFile) {
@@ -617,12 +623,39 @@ export function ProcessGraph() {
               <section>
                 <h4>Outputs</h4>
                 <div className="pg-chips">
-                  {selected.outputs.map((file) => (
-                    <span key={file} className="pg-file">
-                      {file}
-                    </span>
-                  ))}
+                  {selected.outputs.map((file) => {
+                    const artifact = ARTIFACTS[file];
+                    return (
+                      <button
+                        type="button"
+                        key={file}
+                        className={`pg-file is-open-able ${openFile === file ? "is-open" : ""}`}
+                        onClick={() => setOpenFile((current) => (current === file ? null : file))}
+                      >
+                        {file}
+                        {artifact ? <em>{artifact.bytes}</em> : null}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {openFile ? (
+                  <div className="pg-artifact">
+                    <div className="pg-artifact-head">
+                      <b>{openFile}</b>
+                      <button type="button" onClick={() => setOpenFile(null)} aria-label="Close file">
+                        ✕
+                      </button>
+                    </div>
+                    {ARTIFACTS[openFile]?.body ? (
+                      <pre>{ARTIFACTS[openFile].body}</pre>
+                    ) : (
+                      <p className="pg-artifact-note">
+                        {ARTIFACTS[openFile]?.summary ?? "No preview available for this file."}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </section>
             ) : null}
 

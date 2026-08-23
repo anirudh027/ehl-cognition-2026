@@ -916,3 +916,81 @@
   font-size: 11px;
   color: var(--pg-faint);
 }
+
+/* ---------- artifact preview ---------- */
+
+button.pg-file {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
+}
+
+button.pg-file:hover { border-color: var(--pg-accent); }
+
+button.pg-file.is-open {
+  background: var(--pg-accent-strong);
+  border-color: var(--pg-accent-strong);
+  color: #fff;
+}
+
+button.pg-file em {
+  font-style: normal;
+  font-size: 9.5px;
+  opacity: 0.7;
+}
+
+.pg-artifact {
+  margin-top: 9px;
+  border: 1px solid var(--pg-line-strong);
+  border-radius: 9px;
+  overflow: hidden;
+  background: #fbfcfb;
+}
+
+.pg-artifact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 11px;
+  border-bottom: 1px solid var(--pg-line);
+  background: var(--pg-panel);
+}
+
+.pg-artifact-head b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pg-accent-strong);
+}
+
+.pg-artifact-head button {
+  padding: 0 5px;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--pg-faint);
+}
+
+.pg-artifact-head button:hover { color: var(--pg-ink); }
+
+.pg-artifact pre {
+  margin: 0;
+  padding: 10px 11px;
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: #24352f;
+  tab-size: 2;
+}
+
+.pg-artifact-note {
+  margin: 0 !important;
+  padding: 11px;
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+  color: var(--pg-muted) !important;
+}
