@@ -1,0 +1,5 @@
+org-9ee81c768cd14d8d93c391b57b0784ee this is org number, put it where i need to put, i will write api key myself
+
+---
+
+./scripts/devin_capability_probe.sh do this and lets see
