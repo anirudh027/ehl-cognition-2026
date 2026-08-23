@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M0PT455TKZFWGMBPCZWVVGWG",
+  "session_id": "01a029b3-04df-7281-885d-d7ab5541cecb",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-23T07:59:52.653838Z",
+  "branch": "codex-structure-auto-rotate",
+  "checkpoints_count": 1,
+  "files_touched": [],
+  "agent": "Codex",
+  "model": "gpt-5.6-sol",
+  "turn_id": "199482ecc775",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 210001,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 4223225,
+    "output_tokens": 24141,
+    "api_call_count": 71
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 10,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "frontend/src/StructureViewer.tsx": 10
+      }
+    }
+  ]
+}
