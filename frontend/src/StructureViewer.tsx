@@ -46,8 +46,10 @@ function paint(
   }
 }
 
-function frame(viewer: Viewer, focus: number | null, triad: number[]) {
-  const target = focus ?? triad[0];
+function frame(viewer: Viewer, focus: number | null, triad: number[], overview = false) {
+  // `overview` frames the whole chain — used where the structure is shown as a
+  // rotating summary rather than to inspect one residue.
+  const target = overview ? null : focus ?? triad[0];
   if (target) viewer.zoomTo({ resi: target, chain: "A" });
   else viewer.zoomTo();
 }
@@ -58,12 +60,14 @@ export function StructureViewer({
   activity,
   stability,
   focus,
+  overview = false,
 }: {
   pdbText: string;
   triad: number[];
   activity: number[];
   stability: number[];
   focus: number | null;
+  overview?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<ViewerHandle | null>(null);
@@ -92,7 +96,7 @@ export function StructureViewer({
       viewer.intwatcher?.disconnect();
       viewer.addModel(pdbText, "pdb");
       paint(viewer, marks.current.triad, marks.current.activity, marks.current.stability);
-      frame(viewer, marks.current.focus, marks.current.triad);
+      frame(viewer, marks.current.focus, marks.current.triad, overview);
       viewer.render();
       viewerRef.current = viewer;
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -123,10 +127,10 @@ export function StructureViewer({
 
   useEffect(() => {
     const viewer = viewerRef.current;
-    if (!viewer || focus == null) return;
+    if (!viewer || focus == null || overview) return;
     viewer.zoomTo({ resi: focus, chain: "A" });
     viewer.render();
-  }, [focus]);
+  }, [focus, overview]);
 
   return <div className="viewer" ref={host} />;
 }
